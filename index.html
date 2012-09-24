@@ -1,0 +1,45 @@
+<html>
+<head>
+	<title>jQuery Observe</title>
+
+	<script type="text/javascript" src="jquery.js"></script>
+
+	<script type="text/javascript" src="jquery-path.js"></script>
+	<script type="text/javascript" src="jquery-branch.js"></script>
+	<script type="text/javascript" src="jquery-observe.js"></script>
+
+	<script type="text/javascript">
+		console.log($.fn.init.constructor);
+
+		$(function() {
+			console.log('-->', $('li'));
+
+			console.log($('li').root());
+
+			/*$('#header')
+				.observe('childlist', 'ul li:first', function(record) {
+					console.log('->', record);
+				});*/
+
+			//console.log($('#list-2 span').path('ul'));
+		});
+	</script>
+</head>
+<body>
+	<div id='content'>
+		<div id='header'>
+			<ul id='list'>
+				<li id='list-1'>Item 1</li>
+				<li id='list-2'>Item <span>2</span></li>
+			</ul>
+		</div>
+		<div id='footer'>Footer</div>
+	</div>
+
+	<button onclick='$("#list-1").remove()'>Remove item 1</button>
+	<button onclick='$("#list-2").remove()'>Remove item 2</button>
+	<button onclick='$("<li>Item</li>").appendTo("#list")'>Add item</button>
+	<button onclick='$("#list-1").html(Math.random())'>Randomize item 1</button>
+	<button onclick='$("#list-1").attr("data-rand", Math.random())'>Attribute item 1</button>
+</body>
+</html>
