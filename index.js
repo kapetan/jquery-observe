@@ -22,12 +22,18 @@
 		'characterDataOldValue',
 		'attributeFilter'
 	], function(name) { 
-		return [name.toLowerCase(), name] 
+		return [name.toLowerCase(), name];
 	});
 	var ALL = toObject(Object.keys(OBSERVER_OPTIONS), function(name) {
 		if(name !== 'attributefilter') {
 			return [OBSERVER_OPTIONS[name], true];
 		}
+	});
+	var EXTENDED_OPTIONS = toObject([
+		'added',
+		'removed'
+	], function(name) {
+		return [name.toLowerCase(), name];
 	});
 
 	var EMPTY = $([]);
@@ -72,6 +78,13 @@
 
 		if(selector) {
 			options.subtree = true;
+		}
+		if(options.childList) {
+			options.added = true;
+			options.removed = true;
+		}
+		if(options.added || options.removed) {
+			options.childList = true;
 		}
 
 		this.target = $(target);
@@ -199,11 +212,9 @@
 		var result = {};
 
 		this.patterns.forEach(function(pattern) {
-			var restrictiveFiler = result.attributes && result.attributeFilter;
+			var restrictiveFilter = result.attributes && result.attributeFilter;
 
-			$.extend(result, pattern.options);
-
-			if(restrictiveFiler && pattern.attributeFilter) {
+			if((restrictiveFilter || !result.attributes) && pattern.attributeFilter) {
 				var attributeFilter = (result.attributeFilter || []).concat(pattern.attributeFilter);
 				var existing = {};
 				var unique = [];
@@ -216,7 +227,15 @@
 				});
 
 				result.attributeFilter = unique;
+			} else if(restrictiveFilter && pattern.options.attributes && !pattern.attributeFilter) {
+				delete result.attributeFilter;
 			}
+
+			$.extend(result, pattern.options);
+		});
+
+		Object.keys(EXTENDED_OPTIONS).forEach(function(name) {
+			delete result[EXTENDED_OPTIONS[name]];
 		});
 
 		return result;

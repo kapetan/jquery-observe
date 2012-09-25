@@ -2,6 +2,8 @@
 <head>
 	<title>jQuery Observe Tests</title>
 
+	<meta charset="utf-8">
+
 	<script type='text/javascript' src='http://code.jquery.com/jquery.min.js'></script>
 	<script type='text/javascript' src='http://code.jquery.com/qunit/qunit-1.10.0.js'></script>
 
@@ -53,7 +55,7 @@
 
 		module('Observe this');
 
-		test('Attribute change', function() {
+		test('Attribute changed', function() {
 			stop();
 			expect(4);
 
@@ -69,6 +71,82 @@
 			});
 
 			helper($ul).attr('data-attr', 'value');
+		});
+		test('Double match (all, restrictive) on attribute changed', function() {
+			stop(2);
+			expect(6);
+
+			var $ul = $fixture.find('ul');
+			var fn = function(record) {
+				equal(this, $ul[0], 'Changed attribute on this');
+				equal('attributes', record.type);
+				equal('data-attr', record.attributeName);
+
+				start();
+			};
+
+			$ul
+				.observe('attributes', fn)
+				.observe({ attributes: true, attributeFilter: ['data-attr'] }, fn);
+
+			helper($ul).attr('data-attr', 'value');
+		});
+		test('Double match (restrictive, all) on attribute changed', function() {
+			stop(2);
+			expect(6);
+
+			var $ul = $fixture.find('ul');
+			var fn = function(record) {
+				equal(this, $ul[0], 'Changed attribute on this');
+				equal('attributes', record.type);
+				equal('data-attr', record.attributeName);
+
+				start();
+			};
+
+			$ul
+				.observe({ attributes: true, attributeFilter: ['data-attr'] }, fn)
+				.observe('attributes', fn);
+
+			helper($ul).attr('data-attr', 'value');
+		});
+		test('Single match (all, restrictive) on attribute changed', function() {
+			stop();
+			expect(3);
+
+			var $ul = $fixture.find('ul');
+			var fn = function(record) {
+				equal(this, $ul[0], 'Changed attribute on this');
+				equal('attributes', record.type);
+				equal('data-other', record.attributeName);
+
+				start();
+			};
+
+			$ul
+				.observe('attributes', fn)
+				.observe({ attributes: true, attributeFilter: ['data-attr'] }, fn);
+
+			helper($ul).attr('data-other', 'value');
+		});
+		test('Single match (restrictive, all) on attribute changed', function() {
+			stop();
+			expect(3);
+
+			var $ul = $fixture.find('ul');
+			var fn = function(record) {
+				equal(this, $ul[0], 'Changed attribute on this');
+				equal('attributes', record.type);
+				equal('data-other', record.attributeName);
+
+				start();
+			};
+
+			$ul
+				.observe({ attributes: true, attributeFilter: ['data-attr'] }, fn)
+				.observe('attributes', fn);
+
+			helper($ul).attr('data-other', 'value');
 		});
 		test('Node added', function() {
 			stop();
@@ -234,6 +312,29 @@
 			helper($ul).attr('data-other', 'value');
 			helper($ul.find('li:first')).add('<span>value</span>');
 			helper($ul.find('li:last')).attr('data-attr', 'value');
+		});
+		test('Multiple matches on add node', function() {
+			stop(2);
+			expect(4);
+
+			var $ul = $fixture.find('ul');
+			var $li = $ul.find('li:first');
+
+			$ul
+				.observe('childlist', 'li:first span', function(record) {
+					equal(this, $li.find('span')[0], 'Span inserted');
+					equal('childList', record.type);
+
+					start();
+				})
+				.observe('childlist', 'li:first span a', function(record) {
+					equal(this, $li.find('span a')[0], 'Span with a inserted');
+					equal('childList', record.type);
+
+					start();
+				});
+
+			helper($li).add('<span><a href="#">value</a></span>');
 		});
 	</script>
 </head>
