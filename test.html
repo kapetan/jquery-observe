@@ -1,0 +1,259 @@
+<html>
+<head>
+	<title>jQuery Observe Tests</title>
+
+	<script type='text/javascript' src='http://code.jquery.com/jquery.min.js'></script>
+	<script type='text/javascript' src='http://code.jquery.com/qunit/qunit-1.10.0.js'></script>
+
+	<script type='text/javascript' src='lib/jquery-path.js'></script>
+	<script type='text/javascript' src='lib/jquery-branch.js'></script>
+	<script type='text/javascript' src='index.js'></script>
+
+	<link rel='stylesheet' type='text/css' href='http://code.jquery.com/qunit/qunit-1.10.0.css'>
+
+	<script type="text/javascript">
+		var $fixture;
+		var helper = function(elem) {
+			helperProxy._elem = elem;
+			return helperProxy;
+		}; 
+		helper.remove = function(elem, fn) {
+			this._run(function() { $(elem).remove() }, fn);
+		};
+		helper.add = function(elem, html, fn) {
+			this._run(function() { $(elem).append(html) }, fn);
+		};
+		helper.html = function(elem, html, fn) {
+			this._run(function() { $(elem).get(0).innerHTML = html }, fn);
+		};
+		helper.attr = function(elem, name, value, fn) {
+			this._run(function() { $(elem).attr(name, value) }, fn);
+		};
+		helper._run = function(fn, callback) {
+			setTimeout(function() { fn(); (callback || function() {})(); }, 10);
+		};
+
+		var helperProxy = {};
+
+		['remove', 'add', 'html', 'attr'].forEach(function(name) {
+			helperProxy[name] = function() {
+				var args = Array.prototype.slice.call(arguments);
+
+				args.splice(0, 0, this._elem);
+				helper[name].apply(helper, args);
+			};
+		});
+
+		QUnit.testStart(function() {
+			$fixture = $('#qunit-fixture');
+		});
+		QUnit.testDone(function() {
+			$('#container').remove();
+		});
+
+		module('Observe this');
+
+		test('Attribute change', function() {
+			stop();
+			expect(4);
+
+			var $ul = $fixture.find('ul');
+
+			$ul.observe('attributes', function(record) {
+				equal(this, record.target, 'Attribute changed on this');
+				equal(this, $ul[0]);
+				equal('attributes', record.type);
+				equal('data-attr', record.attributeName);
+
+				start();
+			});
+
+			helper($ul).attr('data-attr', 'value');
+		});
+		test('Node added', function() {
+			stop();
+			expect(2);
+
+			var $ul = $fixture.find('ul');
+
+			$ul.observe('childlist', function(record) {
+				equal(this, record.target, 'Added node to this');
+				equal('childList', record.type);
+
+				start();
+			});
+
+			helper($ul).add('<li>Item 0</li>');
+		});
+		test('Node removed', function() {
+			stop();
+			expect(2);
+
+			var $ul = $fixture.find('ul');
+
+			$ul.observe('childlist', function(record) {
+				equal(this, record.target, 'Removed node from this');
+				equal('childList', record.type);
+
+				start();
+			});
+
+			helper($ul.find('li:first')).remove();
+		});
+
+		module('Observe child');
+
+		test('Child attibute changed', function() {
+			stop();
+			expect(3);
+
+			var $ul = $fixture.find('ul');
+			var $li = $ul.find('li:first');
+
+			$ul.observe('attributes', 'li:first', function(record) {
+				equal(this, $li[0], 'Changed child attribute');
+				equal('attributes', record.type);
+				equal('data-attr', record.attributeName);
+
+				start();
+			});
+
+			helper($li).attr('data-attr', 'value');
+		});
+		test('Child node added', function() {
+			stop();
+			expect(3);
+
+			var $ul = $fixture.find('ul');
+			var $li = $ul.find('li:first');
+
+			$ul.observe('childlist', 'li:first span', function(record) {
+				equal(this, $li.find('span')[0], 'Added child node');
+				equal('childList', record.type);
+				equal(1, record.addedNodes.length);
+
+				start();
+			});
+
+			helper($li).add('<span>value</span>');
+		});
+		test('Child node removed', function() {
+			stop();
+			expect(3);
+
+			var $ul = $fixture.find('ul');
+			var $li = $ul.find('li:last');
+
+			$ul.observe('childlist', 'li:last span', function(record) {
+				equal(this, $li[0], 'Removed child node');
+				equal('childList', record.type);
+				equal(1, record.removedNodes.length);
+
+				start();
+			});
+
+			helper($li.find('span')).remove();
+		});
+
+		module('Multiple observers');
+
+		test('Child node added and attribute changed', function() {
+			stop(2);
+			expect(4);
+
+			var $ul = $fixture.find('ul');
+			var $li = $ul.find('li:first');
+
+			$ul
+				.observe('childlist', 'li:first span', function(record) {
+					equal(this, $li.find('span')[0], 'Added child node');
+					equal('childList', record.type);
+
+					start();
+				})
+				.observe({ attributes: true, attributeFilter: ['data-attr'] }, 'li:first', function(record) {
+					equal(this, $li[0], 'Changed attribute');
+					equal('attributes', record.type);
+
+					start();
+				});
+
+			helper($li).add('<span>value</span>');
+			helper($li).attr('data-attr', 'value');
+		});
+		test('Child node added and removed', function() {
+			stop(2);
+			expect(2);
+
+			var $ul = $fixture.find('ul');
+			var $li = $ul.find('li:first');
+
+			$ul.observe('childlist', 'li:first span', function(record) {
+				equal('childList', record.type);
+
+				start();
+			});
+
+			helper($li).add('<span>value</span>', function() {
+				// If the node is removed too fast the DOM is updated, 
+				// before a record can be processed.
+				setTimeout(function() {
+					$li.find('span').remove();
+				}, 100);
+			});
+		});
+		test('Nodes added, removed and attribute changed', function() {
+			stop(3);
+			expect(9);
+
+			var $ul = $fixture.find('ul');
+
+			$ul
+				.observe('attributes', function(record) {
+					equal(this, $ul[0], 'Changed attribute on this');
+					equal('attributes', record.type);
+					equal('data-other', record.attributeName);
+
+					start();
+				})
+				.observe('childlist', 'li:first span', function(record) {
+					equal(this, $ul.find('li:first span')[0], 'Added node to first li');
+					equal('childList', record.type);
+					equal(1, record.addedNodes.length);
+
+					start();
+				})
+				.observe({ attributes: true, attributeFilter: ['data-attr'] }, 'li:last', function(record) {
+					equal(this, $ul.find('li:last')[0], 'Changed attibute on last li');
+					equal('attributes', record.type);
+					equal('data-attr', record.attributeName);
+
+					start();
+				});
+
+			helper($ul).attr('data-other', 'value');
+			helper($ul.find('li:first')).add('<span>value</span>');
+			helper($ul.find('li:last')).attr('data-attr', 'value');
+		});
+	</script>
+</head>
+<body>
+	<div id="qunit"></div>
+	<div id="qunit-fixture">
+		<div id='container'>
+			<div id='header'>
+				Header
+			</div>
+			<div id='content'>
+				<ul id='list' data-attr='attr'>
+					<li>Item 1</li>
+					<li>Item <span class='last-li'>2</span></li>
+				</ul>
+			</div>
+			<div id='footer'>
+				Footer
+			</div>
+		</div>
+	</div>
+</body>
+</html>

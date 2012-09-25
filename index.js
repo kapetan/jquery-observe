@@ -1,5 +1,19 @@
-(function() {
-	var OBSERVER_OPTIONS = [
+(function($) {
+	var toObject = function(array, fn) {
+		var result = {};
+
+		array.forEach(function(name) {
+			var pair = fn(name);
+
+			if(pair) {
+				result[pair[0]] = pair[1];
+			}
+		});
+
+		return result;
+	};
+
+	var OBSERVER_OPTIONS = toObject([
 		'childList',
 		'attributes',
 		'characterData',
@@ -7,18 +21,16 @@
 		'attributeOldValue',
 		'characterDataOldValue',
 		'attributeFilter'
-	].reduce(function(acc, name) {
-		acc[name.toLowerCase()] = name;
-
-		return acc;
-	}, {});
-	var ALL = Object.keys(OBSERVER_OPTIONS).reduce(function(acc, name) {
+	], function(name) { 
+		return [name.toLowerCase(), name] 
+	});
+	var ALL = toObject(Object.keys(OBSERVER_OPTIONS), function(name) {
 		if(name !== 'attributefilter') {
-			acc[OBSERVER_OPTIONS[name]] = true;
+			return [OBSERVER_OPTIONS[name], true];
 		}
+	});
 
-		return acc;
-	}, {});
+	var EMPTY = $([]);
 
 	var parseOptions = function(options) {
 		if(typeof options === 'object') {
@@ -41,6 +53,15 @@
 
 		return result;
 	};
+	var mapTextNodes = function(collection) {
+		return Array.prototype.slice.call(collection).map(function(node) {
+			if(node instanceof Text) {
+				return $(node).parent().get(0);
+			}
+
+			return node;
+		});
+	};
 
 	var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
 	
@@ -60,105 +81,73 @@
 	};
 	Pattern.prototype.match = function(record) {
 		var self = this;
+		var options = this.options;
 		var type = record.type;
 
 		if(!this.options[type]) {
-			return false;
+			return EMPTY;
 		}
 
 		if(this.selector) {
-			var nodes = [];
-			var concat = function(nodeList) {
-				nodes = nodes.concat(Array.prototype.slice.call(nodeList));
-			};
-
-			if(type === 'attributes' || type === 'characterData') {
-				nodes.push(record.target);
+			switch(type) {
+			case 'attributes':
+				if(!this._matchAttributeFilter(record)) {
+					return EMPTY;
+				}
+			case 'characterData':
+				return this._matchAttributesAndCharacterData(record);
+			case 'childList':
+				if(record.addedNodes && record.addedNodes.length) {
+					return this._matchAddedNodes(record);
+				}
+				if(record.removedNodes && record.removedNodes.length) {
+					return this._matchRemovedNodes(record);
+				}
 			}
-			if(record.addedNodes && record.addedNodes.length) {
-				concat(record.addedNodes);
-			} 
-			if(record.removedNodes && record.removedNodes.length) {
-				var cloned = this.target.clone(false, false);
-				var targetPath = $(record.target).path(this.target);
-				var targetCloned = cloned.find(targetPath);
-
-				for(var i = 0; i < record.removedNodes.length; i++) {
-					var node = $(record.removedNodes[i]).clone(false, false);
-
-					if(node instanceof Text) {
-
-
-						continue;
-					}
-					else if(record.previousSibling) {
-						var previousSiblingCloned;
-
-						if(record.previousSibling instanceof Text) {
-							var contents = $(record.target).contents();
-							var j;
-
-							for(j = 0; j < contents.length; j++) {
-								if(contents[j] === record.previousSibling) {
-									break;
-								}
-							}
-
-							previousSiblingCloned = $(targetCloned.contents()[j]);
-						} else {
-							var previousSiblingPath = $(record.previousSibling).path(record.target);
-							previousSiblingCloned = targetCloned.find(previousSiblingPath);
-						}
-
-						previousSiblingCloned.after(node);
-					} else if(record.nextSibling) {
-						var nextSiblingCloned;
-
-						if(record.nextSibling instanceof Text) {
-							var contents = $(record.target).contents();
-							var j;
-
-							for(j = contents.length - 1; j >= 0; j--) {
-								if(contents[j] === record.nextSibling) {
-									break;
-								}
-							}
-
-							nextSiblingCloned = $(targetCloned.contents()[j]);
-						} else {
-							var nextSiblingPath = $(record.nextSibling).path(record.target);
-							nextSiblingCloned = targetCloned.find(nextSiblingPath);
-						}
-
-						nextSiblingCloned.before(node);
-					} else {
-						targetCloned.append(node);
-					}
+		} else {
+			switch(type) {
+			case 'attributes':
+				if(!this._matchAttributeFilter(record)) {
+					return EMPTY;
+				}
+			case 'characterData':
+			case 'childList':
+				if(!options.subtree && record.target !== this.target.get(0)) {
+					return EMPTY;
 				}
 
-				/*if(!cloned.find(this.selector).closest(targetCloned).length) {
-					return false;
-				}*/
-			}
-
-			nodes = nodes.map(function(node) {
-				if(node instanceof Text) {
-					return $(node).parent();
-				}
-
-				return node;
-			});
-
-			console.log('match.nodes', nodes);
-
-			if(!nodes.some(function(node) {
-				return self.target.find(self.selector).index(node) >= 0;
-			})) {
-				return false;
+				return $(record.target);
 			}
 		}
+	};
+	Pattern.prototype._matchAttributesAndCharacterData = function(record) {
+		return this._matchSelector(this.target, [record.target]);
+	};
+	Pattern.prototype._matchAddedNodes = function(record) {
+		return this._matchSelector(this.target, record.addedNodes);
+	};
+	Pattern.prototype._matchRemovedNodes = function(record) {
+		var branch = this.target.branch();
+		var nodes = Array.prototype.slice.call(record.removedNodes);
 
-		if(this.attributeFilter && type === 'attributes') {
+		if(record.previousSibling) {
+			branch.find(record.previousSibling).after(nodes);
+		} else if(record.nextSibling) {
+			branch.find(record.nextSibling).before(nodes);
+		} else {
+			branch.find(record.target).empty().append(nodes);
+		}
+
+		return this._matchSelector(branch, nodes).length ? $(record.target) : EMPTY;
+	};
+	Pattern.prototype._matchSelector = function(origin, element) {
+		var match = origin.find(this.selector);
+		element = $(mapTextNodes(element));
+
+		return match.closest(element).length ? match : EMPTY;
+	};
+	Pattern.prototype._matchAttributeFilter = function(record) {
+		if(this.attributeFilter && this.attributeFilter.length) {
 			return this.attributeFilter.indexOf(record.attributeName) >= 0;
 		}
 
@@ -179,11 +168,12 @@
 				records.forEach(function(record) {
 					for(var i = 0; i < self.patterns.length; i++) {
 						var pattern = self.patterns[i];
-
-						console.log('observe.pattern', pattern, record);
+						var match = pattern.match(record);
 						
-						if(pattern.match(record)) {
-							pattern.handler(record);
+						if(match.length) {
+							match.each(function() {
+								pattern.handler.call(this, record);
+							});
 						}					
 					}
 				});
@@ -229,8 +219,6 @@
 			}
 		});
 
-		console.log('_collapseOptions', result);
-
 		return result;
 	};
 
@@ -253,8 +241,6 @@
 			}
 
 			options = parseOptions(options);
-
-			console.log('$.fn.observe', options, selector, typeof handler);
 
 			observer.observe(options, selector, handler);
 		});

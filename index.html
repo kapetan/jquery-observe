@@ -2,26 +2,21 @@
 <head>
 	<title>jQuery Observe</title>
 
-	<script type="text/javascript" src="jquery.js"></script>
+	<script type='text/javascript' src='http://code.jquery.com/jquery.min.js'></script>
 
-	<script type="text/javascript" src="jquery-path.js"></script>
-	<script type="text/javascript" src="jquery-branch.js"></script>
-	<script type="text/javascript" src="jquery-observe.js"></script>
+	<script type="text/javascript" src="lib/jquery-path.js"></script>
+	<script type="text/javascript" src="lib/jquery-branch.js"></script>
+	<script type="text/javascript" src="index.js"></script>
 
 	<script type="text/javascript">
-		console.log($.fn.init.constructor);
-
 		$(function() {
-			console.log('-->', $('li'));
-
-			console.log($('li').root());
-
-			/*$('#header')
+			$('#header')
+				.observe('attributes', function(record) {
+					console.log('Attribute changed on #header', this, record);
+				})
 				.observe('childlist', 'ul li:first', function(record) {
-					console.log('->', record);
-				});*/
-
-			//console.log($('#list-2 span').path('ul'));
+					console.log('DOM changed: element matching "ul li:first" added/removed', this, record);
+				});
 		});
 	</script>
 </head>
@@ -39,7 +34,7 @@
 	<button onclick='$("#list-1").remove()'>Remove item 1</button>
 	<button onclick='$("#list-2").remove()'>Remove item 2</button>
 	<button onclick='$("<li>Item</li>").appendTo("#list")'>Add item</button>
-	<button onclick='$("#list-1").html(Math.random())'>Randomize item 1</button>
-	<button onclick='$("#list-1").attr("data-rand", Math.random())'>Attribute item 1</button>
+	<button onclick='$("ul li:first").html(Date.now())'>Randomize first item</button>
+	<button onclick='$("#header").attr("data-rand", Date.now())'>Header attribute</button>
 </body>
 </html>
