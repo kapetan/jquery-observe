@@ -1,6 +1,6 @@
-#!/usr/bin/ruby
+#!/usr/bin/env ruby
 
-dir = File.dirname(__FILE__)
+dir = File.absolute_path(File.dirname(__FILE__))
 template = "// File -- %s\n%s"
 
 out = []

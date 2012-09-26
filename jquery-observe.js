@@ -235,7 +235,7 @@
 		});
 	};
 
-	var objectToString = window.s = function(obj) {
+	var objectToString = function(obj) {
 		return '[' + Object.keys(obj).sort().reduce(function(acc, key) {
 			var valueStr = (obj[key] && typeof obj[key] === 'object') ? objectToString(obj[key]) : obj[key];
 

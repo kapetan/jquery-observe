@@ -4,7 +4,7 @@ A jQuery plugin which simplifies the use of the new [DOM Mutation Observer][w3_m
 
 # Compatibility
 
-At this point the Mutations Observer API is only available in newer versions of Google Chrome and Mozillza Firefox.
+At this point the Mutations Observer API is only available in newer versions of Google Chrome (>= 18) and Mozillza Firefox (>= 14). Can be usefull when developing extensions (add-ons) that use content scripts, on a page that you don't control.
 
 # Usage
 
