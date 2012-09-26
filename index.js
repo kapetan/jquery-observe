@@ -69,9 +69,20 @@
 		});
 	};
 
+	var objectToString = window.s = function(obj) {
+		return '[' + Object.keys(obj).sort().reduce(function(acc, key) {
+			var valueStr = (obj[key] && typeof obj[key] === 'object') ? objectToString(obj[key]) : obj[key];
+
+			return acc + '[' + JSON.stringify(key) + ':' + valueStr + ']';
+		}, '') + ']';
+	};
+
 	var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
 	
 	var Pattern = function(target, options, selector, handler) {
+		this._originalOptions = $.extend({}, options);
+		options = $.extend({}, options);
+
 		this.attributeFilter = options.attributeFilter;
 
 		delete options.attributeFilter;
@@ -91,6 +102,11 @@
 		this.options = options;
 		this.selector = selector;
 		this.handler = handler;
+	};
+	Pattern.prototype.is = function(options, selector, handler) {
+		return objectToString(this._originalOptions) === objectToString(options) &&
+			this.selector === selector &&
+			this.handler === handler;
 	};
 	Pattern.prototype.match = function(record) {
 		var self = this;
@@ -217,12 +233,35 @@
 		this.patterns.push(new Pattern(this._target, options, selector, handler));
 		this._observer.observe(this._target, this._collapseOptions());
 	};
-	Observer.prototype.disconnect = function() {
+	Observer.prototype.disconnect = function(options, selector, handler) {
+		var self = this;
+
+		if(this._observer) {
+			this.patterns.filter(function(pattern) {
+				return pattern.is(options, selector, handler);
+			}).forEach(function(pattern) {
+				var index = self.patterns.indexOf(pattern);
+
+				self.patterns.splice(index, 1);
+			});
+
+			if(!this.patterns.length) {
+				this._observer.disconnect();
+			}
+		}
+	};
+	Observer.prototype.disconnectAll = function() {
+		if(this._observer) {
+			this.patterns = [];
+			this._observer.disconnect();
+		}
+	};
+	Observer.prototype.pause = function() {
 		if(this._observer) {
 			this._observer.disconnect();
 		}
 	};
-	Observer.prototype.reconnect = function() {
+	Observer.prototype.resume = function() {
 		if(this._observer) {
 			this._observer.observe(this._target, this._collapseOptions());
 		}
@@ -261,6 +300,14 @@
 	};
 
 	$.fn.observe = function(options, selector, handler) {
+		if(!selector) {
+			handler = options;
+			options = ALL;
+		} else if(!handler) {
+			handler = selector;
+			selector = null;
+		}
+
 		return this.each(function() {
 			var self = $(this);
 			var observer = self.data('observer');
@@ -270,17 +317,41 @@
 				self.data('observer', observer);
 			}
 
-			if(!selector) {
-				handler = options;
-				options = ALL;
-			} else if(!handler) {
-				handler = selector;
-				selector = null;
+			options = parseOptions(options);
+
+			observer.observe(options, selector, handler);
+		});
+	};
+	$.fn.disconnect = function(options, selector, handler) {
+		if(!options) {
+			// No arguments
+		}
+		else if(!selector) {
+			handler = options;
+			options = ALL;
+		} else if(!handler) {
+			handler = selector;
+			selector = null;
+		}
+
+		return this.each(function() {
+			var self = $(this);
+			var observer = self.data('observer');
+
+			if(!observer) {
+				return;
+			}
+
+			if(!options) {
+				observer.disconnectAll();
+				self.removeData('observer');
+
+				return;
 			}
 
 			options = parseOptions(options);
 
-			observer.observe(options, selector, handler);
+			observer.disconnect(options, selector, handler);
 		});
 	};
 }(jQuery));

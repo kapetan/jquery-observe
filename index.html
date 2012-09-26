@@ -10,11 +10,13 @@
 
 	<script type="text/javascript">
 		$(function() {
+			window.fn = function(record) {
+				console.log('Attribute changed on #header', this, record);
+			}
+
 			$('#header')
-				.observe('attributes', function(record) {
-					console.log('Attribute changed on #header', this, record);
-				})
-				.observe('removed', 'ul li:first', function(record) {
+				.observe('attributes', fn)
+				.observe('removed added', 'ul li:first', function(record) {
 					console.log('DOM changed: element matching "ul li:first" added/removed', this, record);
 				});
 		});

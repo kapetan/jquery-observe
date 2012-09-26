@@ -81,9 +81,14 @@ There are two custom Mutation Observer options which can be used together with t
 
 Using the options `'added removed'` is equivalent to `'childlist'`.
 
+### Removing observers
+
+Use the `$.fn.disconnect()` method to remove an observer. The arguments must match the arguments given to the `$.fn.observe()` method. Or call the disconnect method without arguments to remove all observers. The underlying Mutation Observer is disabled when there are no observers listening for changes.
+
 # Issues
 
-There are some problems getting the characterData option to work in Chrome (may be because of bug [#134322](http://code.google.com/p/chromium/issues/detail?id=134322)).
+There are some problems getting the characterData option to work in Chrome (may be because of bug [#134322][chrome_bug]).
 
 [w3_mo]: http://dvcs.w3.org/hg/domcore/raw-file/tip/Overview.html#mutation-observers "Mutation Observer"
 [w3_mr]: http://dvcs.w3.org/hg/domcore/raw-file/tip/Overview.html#mutationrecord "Mutaion Record"
+[chrome_bug]: http://code.google.com/p/chromium/issues/detail?id=134322 "Chrome bug #134322"
