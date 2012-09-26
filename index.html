@@ -1,8 +1,10 @@
+<!DOCTYPE html>
 <html>
 <head>
 	<title>jQuery Observe</title>
 
 	<script type='text/javascript' src='http://code.jquery.com/jquery.min.js'></script>
+	<script type='text/javascript' src='http://ajax.cdnjs.com/ajax/libs/json2/20110223/json2.js'></script>
 
 	<script type="text/javascript" src="lib/jquery-path.js"></script>
 	<script type="text/javascript" src="lib/jquery-branch.js"></script>
@@ -16,11 +18,52 @@
 
 			$('#header')
 				.observe('attributes', fn)
-				.observe('removed added', 'ul li:first', function(record) {
+				.observe('added', 'ul li:first', function(record) {
 					console.log('DOM changed: element matching "ul li:first" added/removed', this, record);
 				});
 		});
 	</script>
+
+	<!--<script type="text/javascript">
+		$(function() {
+			console.log('ready ');
+
+			var content = $('#content');
+			var p = function(e) {
+				e = e.originalEvent;
+
+				var result = '\n{\n';
+
+				for(var name in e) {
+					result += ('  ' + name + ' : ' + e[name] + '\n');
+				}
+
+				console.log(result + '}');
+			};
+
+			$('#content')
+				/*.on('DOMSubtreeModified', function(e) {
+					console.log('modified');
+					p(e);
+				})*/
+				.on('DOMCharacterDataModified', function(e) {
+					console.log('modified character data');
+					p(e);
+				})
+				.on('DOMNodeInserted', function(e) {
+					console.log('modified inserted');
+					p(e);
+				})
+				.on('DOMNodeRemoved', function(e) {
+					console.log('modified removed');
+					p(e);
+				})
+				.on('DOMAttrModified', function(e) {
+					console.log('modified attr');
+					p(e);
+				});
+		});
+	</script>-->
 </head>
 <body>
 	<div id='content' class='content'>
@@ -38,5 +81,6 @@
 	<button onclick='$("<li>Item</li>").appendTo("#list")'>Add item</button>
 	<button onclick='$("ul li:first").html(Date.now())'>Randomize first item</button>
 	<button onclick='$("#header").attr("data-rand", Date.now())'>Header attribute</button>
+	<button onclick='$("#footer").contents()[0].nodeValue = Date.now()'>Change footer data</button>
 </body>
 </html>

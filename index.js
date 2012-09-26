@@ -76,6 +76,15 @@
 			return acc + '[' + JSON.stringify(key) + ':' + valueStr + ']';
 		}, '') + ']';
 	};
+	var ppObject = function(obj) {
+		var result = '\n{\n';
+
+		for(var name in obj) {
+			result += '\t' + name + ': ' + obj[name] + '\n'
+		}
+
+		console.log(result + '}');
+	};
 
 	var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
 	
@@ -299,6 +308,114 @@
 		return result;
 	};
 
+	var DOMEventObserver = function(target) {
+		this.patterns = [];
+
+		this._target = target;
+		this._events = {};
+		this._handler = this._handler.bind(this);
+	};
+	DOMEventObserver.prototype.observe = function(options, selector, handler) {
+		var pattern = new Pattern(this._target, options, selector, handler);
+		var target = $(this._target);
+
+		if(pattern.options.childList) {
+			this._addEvent('DOMNodeInserted');
+			this._addEvent('DOMNodeRemoved');
+		}
+		if(pattern.options.attributes) {
+			this._addEvent('DOMAttrModified');
+		}
+		if(pattern.options.characterData) {
+			this._addEvent('DOMCharacerDataModified');
+		}
+
+		this.patterns.push(pattern);
+	};
+	DOMEventObserver.prototype.disconnect = function(options, selector, handler) {
+
+	};
+	DOMEventObserver.prototype.disconnectAll = function() {
+		var target = $(this._target);
+
+		for(var name in this._events) {
+			target.off(name, this._handler);
+		}
+
+		this._events = {};
+		this.patterns = [];
+	};
+	DOMEventObserver.prototype.pause = function() {
+
+	};
+	DOMEventObserver.prototype.resume = function() {
+
+	};
+	DOMEventObserver.prototype._handler = function(e) {
+		var record = {
+			type: null,
+			target: null,
+			addedNodes: null,
+			removedNodes: null,
+			previousSibling: null,
+			nextSibling: null,
+			attributeName: null,
+			attributeNamespace: null,
+			oldValue: null
+		};
+
+		switch(e.type) {
+		case 'DOMAttrModified':
+			record.type = 'attributes';
+			record.target = e.target;
+			record.attributeName = e.attrName;
+			record.oldValue = e.prevValue;
+
+			break;
+		case 'DOMCharacerDataModified':
+			record.type = 'characterData';
+			record.target = $(e.target).parent().get(0);
+			record.attributeName = e.attrName;
+			record.oldValue = e.prevValue;
+
+			break;
+		case 'DOMNodeInserted':
+			record.type = 'childList';
+			record.target = e.relatedNode;
+			record.addedNodes = [e.target];
+			record.removedNodes = [];
+
+			break;
+		case 'DOMNodeRemoved':
+			record.type = 'childList';
+			record.target = e.relatedNode;
+			record.addedNodes = [];
+			record.removedNodes = [e.target];
+
+			break;
+		}
+
+		console.log('_handler');
+		ppObject(record);
+
+		for(var i = 0; i < this.patterns.length; i++) {
+			var pattern = this.patterns[i];
+			var match = pattern.match(record);
+			
+			if(match.length) {
+				match.each(function() {
+					pattern.handler.call(this, record);
+				});
+			}					
+		}
+	};
+	DOMEventObserver.prototype._addEvent = function(type) {
+		if(!this._events[type]) {
+			$(this._target).on(type, this._handler);
+			this._events[type] = true;
+		}
+	};
+
 	$.fn.observe = function(options, selector, handler) {
 		if(!selector) {
 			handler = options;
@@ -313,7 +430,12 @@
 			var observer = self.data('observer');
 
 			if(!observer) {
-				observer = new Observer(this);
+				if(MutationObserver) {
+					observer = new Observer(this);
+				} else {
+					observer = new DOMEventObserver(this);
+				}
+
 				self.data('observer', observer);
 			}
 
