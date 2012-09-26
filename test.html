@@ -232,6 +232,26 @@
 
 			helper($li.find('span')).remove();
 		});
+		test('Multiple element match on node added', function() {
+			stop(2);
+			expect(4);
+
+			var $ul = $fixture.find('ul');
+			var i = 0;
+
+			$ul.observe('childlist', 'li em', function(record) {
+				equal(this, $ul.find('li em')[i++], 'Multiple item matches');
+				equal('childList', record.type);
+
+				start();
+			});
+
+			helper($ul.find('li:first')).add('<em>value</em>', function() {
+				setTimeout(function() {
+					$ul.find('li:last').append('<em>value</em>');
+				}, 100);
+			});
+		});
 
 		module('Multiple observers');
 

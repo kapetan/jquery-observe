@@ -14,14 +14,14 @@
 				.observe('attributes', function(record) {
 					console.log('Attribute changed on #header', this, record);
 				})
-				.observe('childlist', 'ul li:first', function(record) {
+				.observe('removed', 'ul li:first', function(record) {
 					console.log('DOM changed: element matching "ul li:first" added/removed', this, record);
 				});
 		});
 	</script>
 </head>
 <body>
-	<div id='content'>
+	<div id='content' class='content'>
 		<div id='header'>
 			<ul id='list'>
 				<li id='list-1'>Item 1</li>

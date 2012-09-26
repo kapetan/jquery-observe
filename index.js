@@ -50,11 +50,11 @@
 		options.forEach(function(opt) {
 			opt = opt.toLowerCase();
 
-			if(!OBSERVER_OPTIONS[opt]) {
+			if(!OBSERVER_OPTIONS[opt] && !EXTENDED_OPTIONS[opt]) {
 				throw new Error('Unknown option ' + opt);
 			}
 
-			result[OBSERVER_OPTIONS[opt]] = true;
+			result[OBSERVER_OPTIONS[opt] || EXTENDED_OPTIONS[opt]] = true;
 		});
 
 		return result;
@@ -105,15 +105,19 @@
 			switch(type) {
 			case 'attributes':
 				if(!this._matchAttributeFilter(record)) {
-					return EMPTY;
+					break;
 				}
 			case 'characterData':
 				return this._matchAttributesAndCharacterData(record);
 			case 'childList':
-				if(record.addedNodes && record.addedNodes.length) {
-					return this._matchAddedNodes(record);
+				if(record.addedNodes && record.addedNodes.length && options.added) {
+					var result = this._matchAddedNodes(record);
+
+					if(result.length) {
+						return result;
+					}
 				}
-				if(record.removedNodes && record.removedNodes.length) {
+				if(record.removedNodes && record.removedNodes.length && options.removed) {
 					return this._matchRemovedNodes(record);
 				}
 			}
@@ -121,17 +125,28 @@
 			switch(type) {
 			case 'attributes':
 				if(!this._matchAttributeFilter(record)) {
-					return EMPTY;
+					break;
 				}
 			case 'characterData':
-			case 'childList':
 				if(!options.subtree && record.target !== this.target.get(0)) {
-					return EMPTY;
+					break;
 				}
 
 				return $(record.target);
+			case 'childList':
+				if(!options.subtree && record.target !== this.target.get(0)) {
+					break;
+				}
+
+				if((record.addedNodes && record.addedNodes.length && options.added) ||
+					(record.removedNodes && record.removedNodes.length && options.removed)) {
+
+					return $(record.target);
+				}
 			}
 		}
+
+		return EMPTY;
 	};
 	Pattern.prototype._matchAttributesAndCharacterData = function(record) {
 		return this._matchSelector(this.target, [record.target]);
@@ -157,7 +172,11 @@
 		var match = origin.find(this.selector);
 		element = $(mapTextNodes(element));
 
-		return match.closest(element).length ? match : EMPTY;
+		match = match.filter(function() {
+			return element.is(this) || element.has(this).length;
+		});
+
+		return match.length ? match : EMPTY;
 	};
 	Pattern.prototype._matchAttributeFilter = function(record) {
 		if(this.attributeFilter && this.attributeFilter.length) {
