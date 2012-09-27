@@ -357,17 +357,11 @@
 					equal(this, $li.find('span')[0], 'Span inserted');
 					equal('childList', record.type);
 
-					console.log(1);
-					ppObject(record);
-
 					start();
 				})
 				.observe('childlist', 'li:first span a', function(record) {
 					equal(this, $li.find('span a')[0], 'Span with a inserted');
 					equal('childList', record.type);
-
-					console.log(2);
-					ppObject(record);
 
 					start();
 				});

@@ -76,15 +76,6 @@
 			return acc + '[' + JSON.stringify(key) + ':' + valueStr + ']';
 		}, '') + ']';
 	};
-	var ppObject = function(obj) {
-		var result = '\n{\n';
-
-		for(var name in obj) {
-			result += '\t' + name + ': ' + obj[name] + '\n'
-		}
-
-		console.log(result + '}');
-	};
 
 	var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
 	
@@ -436,6 +427,8 @@
 
 			break;
 		}
+
+		ppObject(record);
 
 		for(var i = 0; i < this.patterns.length; i++) {
 			var pattern = this.patterns[i];
