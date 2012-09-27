@@ -18,7 +18,7 @@
 
 			$('#header')
 				.observe('attributes', fn)
-				.observe('added', 'ul li:first', function(record) {
+				.observe('childlist', 'ul li:first', function(record) {
 					console.log('DOM changed: element matching "ul li:first" added/removed', this, record);
 				});
 		});

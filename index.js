@@ -181,7 +181,9 @@
 	};
 	Pattern.prototype._matchRemovedNodes = function(record) {
 		var branch = this.target.branch();
-		var nodes = Array.prototype.slice.call(record.removedNodes);
+		var nodes = Array.prototype.slice.call(record.removedNodes).map(function(node) {
+			return $(node).clone(false, false).get(0);
+		});
 
 		if(record.previousSibling) {
 			branch.find(record.previousSibling).after(nodes);
@@ -394,9 +396,6 @@
 
 			break;
 		}
-
-		console.log('_handler');
-		ppObject(record);
 
 		for(var i = 0; i < this.patterns.length; i++) {
 			var pattern = this.patterns[i];
