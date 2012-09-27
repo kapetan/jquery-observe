@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html>
 <head>
 	<title>jQuery Observe Tests</title>
@@ -45,6 +46,17 @@
 				helper[name].apply(helper, args);
 			};
 		});
+
+		// Used in IE debugging
+		var ppObject = function(obj) {
+			var result = '\n{\n';
+
+			for(var name in obj) {
+				result += '\t' + name + ': ' + obj[name] + '\n'
+			}
+
+			console.log(result + '}');
+		};
 
 		QUnit.testStart(function() {
 			$fixture = $('#qunit-fixture');
@@ -345,16 +357,45 @@
 					equal(this, $li.find('span')[0], 'Span inserted');
 					equal('childList', record.type);
 
+					console.log(1);
+					ppObject(record);
+
 					start();
 				})
 				.observe('childlist', 'li:first span a', function(record) {
 					equal(this, $li.find('span a')[0], 'Span with a inserted');
 					equal('childList', record.type);
 
+					console.log(2);
+					ppObject(record);
+
 					start();
 				});
 
 			helper($li).add('<span><a href="#">value</a></span>');
+		});
+		test('Multiple matches on remove node', function() {
+			stop(2);
+			expect(4);
+
+			var $ul = $fixture.find('ul');
+			var $li = $ul.find('li:last');
+
+			$ul
+				.observe('childlist', 'li', function(record) {
+					equal(this, $ul[0], 'Li removed');
+					equal('childList', record.type);
+
+					start();
+				})
+				.observe('childlist', 'li span', function(record) {
+					equal(this, $ul[0], 'Li with span remved');
+					equal('childList', record.type);
+
+					start();
+				});
+
+			helper($li).remove();
 		});
 	</script>
 </head>
