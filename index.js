@@ -313,10 +313,12 @@
 	var DOMEventObserver = function(target) {
 		this.patterns = [];
 
+		this._paused = false;
 		this._target = target;
 		this._events = {};
 		this._handler = this._handler.bind(this);
 	};
+	DOMEventObserver.prototype.NS = '.jQueryObserve';
 	DOMEventObserver.prototype.observe = function(options, selector, handler) {
 		var pattern = new Pattern(this._target, options, selector, handler);
 		var target = $(this._target);
@@ -335,25 +337,63 @@
 		this.patterns.push(pattern);
 	};
 	DOMEventObserver.prototype.disconnect = function(options, selector, handler) {
+		var target = $(this._target);
+		var self = this;
 
+		this.patterns.filter(function(pattern) {
+			return pattern.is(options, selector, handler);
+		}).forEach(function(pattern) {
+			var index = self.patterns.indexOf(pattern);
+
+			self.patterns.splice(index, 1);
+		});
+
+		var eventsInUse = this.patterns.reduce(function(acc, pattern) {
+			if(pattern.options.childList) {
+				acc.DOMNodeInserted = true;
+				acc.DOMNodeRemoved = true;
+			}
+			if(pattern.options.attributes) {
+				acc.DOMAttrModified = true;
+			}
+			if(pattern.options.characterData) {
+				acc.DOMCharacerDataModified = true;
+			}
+
+			return acc;
+		}, {});
+
+		Object.keys(this._events).forEach(function(type) {
+			if(eventsInUse[type]) {
+				return;
+			}
+
+			delete self._events[type];
+
+			target.off(type + self.NS, self._handler);
+		});
 	};
 	DOMEventObserver.prototype.disconnectAll = function() {
 		var target = $(this._target);
 
 		for(var name in this._events) {
-			target.off(name, this._handler);
+			target.off(name + this.NS, this._handler);
 		}
 
 		this._events = {};
 		this.patterns = [];
 	};
 	DOMEventObserver.prototype.pause = function() {
-
+		this._paused = true;
 	};
 	DOMEventObserver.prototype.resume = function() {
-
+		this._paused = false;
 	};
 	DOMEventObserver.prototype._handler = function(e) {
+		if(this._paused) {
+			return;
+		}
+
 		var record = {
 			type: null,
 			target: null,
@@ -410,7 +450,7 @@
 	};
 	DOMEventObserver.prototype._addEvent = function(type) {
 		if(!this._events[type]) {
-			$(this._target).on(type, this._handler);
+			$(this._target).on(type + this.NS, this._handler);
 			this._events[type] = true;
 		}
 	};
