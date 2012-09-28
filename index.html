@@ -13,57 +13,20 @@
 	<script type="text/javascript">
 		$(function() {
 			window.fn = function(record) {
-				console.log('Attribute changed on #header', this, record);
+				console.log('Attribute changed on #header ', this, record);
 			}
 
 			$('#header')
 				.observe('attributes', fn)
 				.observe('childlist', 'ul li:first', function(record) {
-					console.log('DOM changed: element matching "ul li:first" added/removed', this, record);
+					console.log('DOM changed: element matching "ul li:first" added/removed ', this, record);
 				});
+
+			$('#footer').observe('characterdata subtree', function(record) {
+				console.log('Character data changed on #footer: ', this, record);
+			});
 		});
 	</script>
-
-	<!--<script type="text/javascript">
-		$(function() {
-			console.log('ready ');
-
-			var content = $('#content');
-			var p = function(e) {
-				e = e.originalEvent;
-
-				var result = '\n{\n';
-
-				for(var name in e) {
-					result += ('  ' + name + ' : ' + e[name] + '\n');
-				}
-
-				console.log(result + '}');
-			};
-
-			$('#content')
-				/*.on('DOMSubtreeModified', function(e) {
-					console.log('modified');
-					p(e);
-				})*/
-				.on('DOMCharacterDataModified', function(e) {
-					console.log('modified character data');
-					p(e);
-				})
-				.on('DOMNodeInserted', function(e) {
-					console.log('modified inserted');
-					p(e);
-				})
-				.on('DOMNodeRemoved', function(e) {
-					console.log('modified removed');
-					p(e);
-				})
-				.on('DOMAttrModified', function(e) {
-					console.log('modified attr');
-					p(e);
-				});
-		});
-	</script>-->
 </head>
 <body>
 	<div id='content' class='content'>

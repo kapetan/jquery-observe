@@ -180,7 +180,15 @@
 		} else if(record.nextSibling) {
 			branch.find(record.nextSibling).before(nodes);
 		} else {
-			branch.find(record.target).empty().append(nodes);
+			var appendTo;
+
+			if(branch.is(record.target)) {
+				appendTo = branch;
+			} else {
+				appendTo = branch.find(record.target);
+			}
+
+			appendTo.empty().append(nodes);
 		}
 
 		return this._matchSelector(branch, nodes).length ? $(record.target) : EMPTY;
@@ -426,8 +434,6 @@
 
 			break;
 		}
-
-		ppObject(record);
 
 		for(var i = 0; i < this.patterns.length; i++) {
 			var pattern = this.patterns[i];
