@@ -90,6 +90,11 @@
 		};
 
 		QUnit.config.testTimeout = 2000;
+		QUnit.config.urlConfig.push({
+			id: "compiled",
+			label: "Compiled source",
+			tooltip: "Load compiled source files instead of the regular ones"
+		});
 
 		QUnit.testStart(function() {
 			$fixture = $('#qunit-fixture');
