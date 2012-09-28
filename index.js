@@ -151,12 +151,12 @@
 					break;
 				}
 			case 'characterData':
-				return recordTarget;
+				return this.target;
 			case 'childList':
 				if((record.addedNodes && record.addedNodes.length && options.added) ||
 					(record.removedNodes && record.removedNodes.length && options.removed)) {
 
-					return recordTarget;
+					return this.target;
 				}
 			}
 		}
