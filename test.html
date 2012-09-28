@@ -252,6 +252,21 @@
 
 			helper($header).text('value');
 		});
+		test('Subtree option', function() {
+			stop();
+			expect(2);
+
+			var $ul = $fixture.find('ul');
+
+			$ul.observe('childlist subtree', function(record) {
+				equal(this, $ul[0], 'Subtree modified without selector');
+				equal('childList', record.type);
+
+				start();
+			});
+
+			helper($ul.find('span')).remove();
+		});
 
 		module('Observe child');
 
