@@ -26,8 +26,39 @@
 		helper.add = function(elem, html, fn) {
 			this._run(function() { $(elem).append(html) }, fn);
 		};
-		helper.html = function(elem, html, fn) {
-			this._run(function() { $(elem).get(0).innerHTML = html }, fn);
+		helper.content = function(elem, html, fn) {
+			this._run(function() { $(elem).text(html) }, fn);
+		};
+		helper.text = function(elem, text, fn) {
+			this._run(function() {
+				elem = $(elem).get(0);
+
+				if(elem instanceof Text) {
+					elem.nodeValue = text;
+					return;
+				} 
+
+				elem = $(elem);
+				var contents = elem.contents();
+				var candidate;
+
+				for(var i = 0; i < contents.length; i++) {
+					var node = contents[i];
+
+					if(node instanceof Text) {
+						candidate = node;
+
+						if(node.nodeValue.trim()) {
+							node.nodeValue = text;
+							return;	
+						}
+					}
+				}
+
+				if(candidate) {
+					candidate.nodeValue = text;
+				}
+			}, fn);
 		};
 		helper.attr = function(elem, name, value, fn) {
 			this._run(function() { $(elem).attr(name, value) }, fn);
@@ -38,7 +69,7 @@
 
 		var helperProxy = {};
 
-		['remove', 'add', 'html', 'attr'].forEach(function(name) {
+		['remove', 'add', 'text', 'content', 'attr'].forEach(function(name) {
 			helperProxy[name] = function() {
 				var args = Array.prototype.slice.call(arguments);
 
@@ -190,6 +221,37 @@
 
 			helper($ul.find('li:first')).remove();
 		});
+		test('Content swapped', function() {
+			stop(2);
+			expect(4);
+
+			var $header = $('#header');
+
+			$header.observe('childlist subtree', function(record) {
+				equal(this, $header[0], 'Child text nodes swapped');
+				equal('childList', record.type);
+
+				start();
+			});
+
+			helper($header).content('value');
+		});
+		test('Character data changed', function() {
+			stop();
+			expect(2);
+
+			var $header = $('#header');
+
+			// Added subtree opition because of Chrome bug.
+			$header.observe('characterData subtree', function(record) {
+				equal(this, $header[0], 'Child text node value changed');
+				equal('characterData', record.type);
+
+				start();
+			});
+
+			helper($header).text('value');
+		});
 
 		module('Observe child');
 
@@ -243,6 +305,45 @@
 			});
 
 			helper($li.find('span')).remove();
+		});
+		test('Swapped content of child node', function() {
+			stop(2);
+			expect(6);
+
+			var $ul = $fixture.find('ul');
+			var removing = true;
+
+			$ul.observe('childlist', 'li', function(record) {
+				if(removing) {
+					removing = false;
+
+					equal(1, record.removedNodes.length, 'Removed text node');
+				} else {
+					equal(1, record.addedNodes.length, 'Added text node');
+				}
+
+				equal(this, $ul.find('li:first')[0]);
+				equal('childList', record.type);
+
+				start();
+			});
+
+			helper($ul.find('li:first')).content('value');
+		});
+		test('Character data changed on child element', function() {
+			stop();
+			expect(2);
+
+			var $ul = $fixture.find('ul');
+
+			$ul.observe('characterData', 'li', function(record) {
+				equal(this, $ul.find('li:first')[0], 'Child text node content modified');
+				equal('characterData', record.type);
+
+				start();
+			});
+
+			helper($ul.find('li:first')).text('value');
 		});
 		test('Multiple element match on node added', function() {
 			stop(2);

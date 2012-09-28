@@ -140,15 +140,20 @@
 		} else {
 			switch(type) {
 			case 'attributes':
-				if(!this._matchAttributeFilter(record)) {
+				if(!options.subtree && record.target !== this.target.get(0)) {
 					break;
 				}
-			case 'characterData':
-				if(!options.subtree && record.target !== this.target.get(0)) {
+				if(!this._matchAttributeFilter(record)) {
 					break;
 				}
 
 				return $(record.target);
+			case 'characterData':
+				if(!options.subtree && $(record.target).parent().get(0) !== this.target.get(0)) {
+					break;
+				}
+
+				return $(this.target);
 			case 'childList':
 				if(!options.subtree && record.target !== this.target.get(0)) {
 					break;

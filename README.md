@@ -40,7 +40,17 @@ $('#content')
 	})
 ```
 
-In the above callback functions `this` referes to the matched DOM element. This also means that the callback is called for every matched element (similar to `$.fn.on()` method).
+In the above callback functions `this` referes to the available matched DOM element. In the case where no selector is given `this` always refers to the element which `.observe()` was called on. When a selector is present `this` references different elements.
+
+*	Records of type *attributes*: `this` refers to the node which had an attribute changed.
+
+*	Records of type *characterData*: `this` refers to the parent element of the text node which had its content modified. The modified text node can be retrieved trough `record.target`.
+
+*	Records of type *childList* and the selector matches an added node: `this` refers to the added node.
+
+*	Records of type *childList* and the selector matches a removed node: `this` refers to the **parent** of the removed node (since the removed node is no longer available in the DOM).
+
+This also means that the callback is called for every matched element (similar to `$.fn.on()`).
 
 Using the above defined observers with the following HTML:
 
