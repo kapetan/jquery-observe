@@ -138,31 +138,25 @@
 				}
 			}
 		} else {
+			var recordTarget = record.target instanceof Text ? 
+				$(record.target).parent() : $(record.target);
+
+			if(!options.subtree && recordTarget.get(0) !== this.target.get(0)) {
+				return EMPTY;
+			}
+
 			switch(type) {
 			case 'attributes':
-				if(!options.subtree && record.target !== this.target.get(0)) {
-					break;
-				}
 				if(!this._matchAttributeFilter(record)) {
 					break;
 				}
-
-				return $(record.target);
 			case 'characterData':
-				if(!options.subtree && $(record.target).parent().get(0) !== this.target.get(0)) {
-					break;
-				}
-
-				return $(this.target);
+				return recordTarget;
 			case 'childList':
-				if(!options.subtree && record.target !== this.target.get(0)) {
-					break;
-				}
-
 				if((record.addedNodes && record.addedNodes.length && options.added) ||
 					(record.removedNodes && record.removedNodes.length && options.removed)) {
 
-					return $(record.target);
+					return recordTarget;
 				}
 			}
 		}
@@ -199,7 +193,7 @@
 			return element.is(this) || element.has(this).length;
 		});
 
-		return match.length ? match : EMPTY;
+		return match;
 	};
 	Pattern.prototype._matchAttributeFilter = function(record) {
 		if(this.attributeFilter && this.attributeFilter.length) {
