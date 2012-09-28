@@ -3,8 +3,12 @@
 require 'net/http'
 require 'uri'
 require 'optparse'
+require 'tmpdir'
 
 options = {}
+
+GOOGLE_CLOSURE_COMPILER = URI.parse('http://closure-compiler.appspot.com/compile')
+OUT_PATH = 'jquery-observe.js'
 
 OptionParser.new { |opts|
 	opts.banner = 'Usage: build.rb [options]'
@@ -12,9 +16,11 @@ OptionParser.new { |opts|
 	opts.on('-m', '--minify', 'Minify souce using the Google Closure Compiler') do 
 		options[:minify] = true
 	end
-}.parse!
 
-GOOGLE_CLOSURE_COMPILER = URI.parse('http://closure-compiler.appspot.com/compile')
+	opts.on('-j', '--jshint', 'Run the source trough JSHint') do
+		options[:jshint] = true
+	end
+}.parse!
 
 def minify(src)
 	Net::HTTP.start(GOOGLE_CLOSURE_COMPILER.host, GOOGLE_CLOSURE_COMPILER.port) do |http|
@@ -33,6 +39,12 @@ def minify(src)
 	end
 end
 
+def jshint(*args)
+	if not %x(which jshint).empty?
+		%x(jshint #{args.join(' ')})
+	end
+end
+
 dir = File.absolute_path(File.dirname(__FILE__))
 template = "// File -- %s\n%s"
 
@@ -47,8 +59,19 @@ Dir.glob(File.join(dir, 'lib', '*')).push(File.join(dir, 'index.js')).each do |p
 end
 
 out = out.join("\n")
+
+if options[:jshint]
+	tmp = File.join(Dir.tmpdir, OUT_PATH)
+
+	File.open(tmp, 'w') do |f|
+		f.write(out);
+	end
+
+	puts jshint(tmp)
+end
+
 out = options[:minify] ? minify(out) : out 
 
-File.open(File.join(dir, 'jquery-observe.js'), 'w') do |f|
+File.open(File.join(dir, OUT_PATH), 'w') do |f|
 	f.write(out)
 end
