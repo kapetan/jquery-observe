@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>jQuery Observe Tests</title>
+
+	<meta charset="utf-8">
+
+	<script type='text/javascript' src='http://code.jquery.com/jquery.min.js'></script>
+	<script type='text/javascript' src='http://code.jquery.com/qunit/qunit-1.10.0.js'></script>
+
+	<link rel='stylesheet' type='text/css' href='http://code.jquery.com/qunit/qunit-1.10.0.css'>
+
+	<script type='text/javascript' src='/test/helper.js'></script>
+	<script type='text/javascript' src='/test/index.js'></script>
+
+	<script type='text/javascript'>
+		$(function() {
+			QUnit.config.autostart = false;
+			QUnit.config.altertitle = false;
+			QUnit.config.testTimeout = 2000;
+			QUnit.config.urlConfig.push({
+				id: "compiled",
+				label: "Compiled source",
+				tooltip: "Load compiled source files instead of the regular ones"
+			});
+
+			var startTest = function() {
+				QUnit.start();
+			};
+
+			if(QUnit.urlParams.compiled) {
+				helper.loadJs('/jquery-observe.js', startTest);
+			} else {
+				helper.loadJs(['/index.js', '/lib/jquery-branch.js', '/lib/jquery-path.js'], startTest);
+			}
+		});
+	</script>
+</head>
+<body>
+	<div id="qunit"></div>
+	<div id="qunit-fixture">
+		<div id='container'>
+			<div id='header'>
+				Header
+			</div>
+			<div id='content'>
+				<ul id='list' data-attr='attr'>
+					<li>Item 1</li>
+					<li>Item <span class='last-li'>2</span></li>
+				</ul>
+			</div>
+			<div id='footer'>
+				Footer
+			</div>
+
+			<span id='menu'><a href="#">Home</a></span>
+		</div>
+	</div>
+</body>
+</html>
