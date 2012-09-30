@@ -36,6 +36,9 @@ class HTTPServer
 					font-style: normal;
 					color: #333;
 				}
+				td.mtime {
+					padding-left: 20px;
+				}
 			</style>
 			<body>
 				<h1><%= dir %></h1>
@@ -51,7 +54,8 @@ class HTTPServer
 										<img src='http://cdn1.iconfinder.com/data/icons/fugue/icon/document-list.png'>
 									<% end %>
 								</td>
-								<td><a href='<%= f[:url] %>'><%= f[:title] %></a></td>
+								<td class='name'><a href='<%= f[:url] %>'><%= f[:title] %></a></td>
+								<td class='mtime'><%= f[:mtime] %></td>
 							</tr>
 						<% end %>
 					</tbody>
@@ -184,7 +188,7 @@ class HTTPServer
 
 	attr_reader :logger
 
-	def initialize(hostname, port = nil)
+	def initialize(hostname, port = nil, &block)
 		if not port
 			port = hostname
 			hostname = nil
@@ -199,6 +203,8 @@ class HTTPServer
 		@logger.formatter = proc { |severity, datetime, progname, msg|
 			"[#{datetime}] #{severity} -- #{progname}: #{msg}\n"
 		}
+
+		instance_eval(&block) if block
 	end
 
 	def close
@@ -243,10 +249,17 @@ class HTTPServer
 
 	def route(request)
 		route = @routes[request.method]
-		route &&= route[request.path]
+		route &&= route.find { |r, _| File.fnmatch?(r, request.path) }.last
 
 		if route
-			route.call(request)
+			resp = route.call(request, Response.new)
+
+			if not resp.is_a?(Response)
+				resp = Response.new(200, resp)
+				resp.headers[:content_type] = 'text/plain; charset=utf-8'
+			end
+
+			resp
 		else
 			file(request)
 		end
@@ -281,7 +294,8 @@ class HTTPServer
 			{
 				:title => f.gsub(dir, '').gsub(/^\/*/, '') + (is_dir ? '/' : ''),
 				:url => f.gsub(DIR, '').gsub(/^\/*/, '/'),
-				:type => is_dir ? :directory : :file
+				:type => is_dir ? :directory : :file,
+				:mtime => File.mtime(f).strftime('%Y-%m-%d %H:%M:%S')
 			}
 		}.sort { |x, y|
 			if x[:type] === y[:type]
@@ -309,6 +323,7 @@ class HTTPServer
 		session = session_id
 		port, ip = Socket.unpack_sockaddr_in(socket.getpeername)
 		logger.info("(#{session}) Connection established #{ip}")
+		logger.debug("Open connections #{connection}")
 
 		begin
 			headers = []
@@ -337,7 +352,7 @@ class HTTPServer
 				request.body = socket.recv(request.headers[:content_length])
 			end
 
-			response = file(request)
+			response = route(request)
 		rescue Error => err
 			response = Response.error(err)
 		rescue Exception => err
@@ -345,6 +360,8 @@ class HTTPServer
 			raise err
 		ensure
 			logger.info("(#{session}) " + response.status_line)
+
+			connection(-1)
 
 			socket.write(response.to_s) rescue nil
 			socket.close rescue nil
@@ -370,11 +387,17 @@ class HTTPServer
 		@session_id ||= 0
 		@session_id += 1
 	end
+
+	def connection(val = 1)
+		@connections ||= 0
+		@connections += val
+	end
 end
 
 options = {}
 
 GOOGLE_CLOSURE_COMPILER = URI.parse('http://closure-compiler.appspot.com/compile')
+GITHUB_MARKDOWN_RENDERER = URI.parse('https://api.github.com/markdown/raw')
 OUT_PATH = 'jquery-observe.js'
 
 OptionParser.new { |opts|
@@ -395,6 +418,23 @@ OptionParser.new { |opts|
 	end
 }.parse!
 
+def read_file(path)
+	File.open(path, 'r') { |f| f.read }
+end
+
+def render_markdown(src)
+	Net::HTTP.start(GITHUB_MARKDOWN_RENDERER.host, GITHUB_MARKDOWN_RENDERER.port, :use_ssl => true, :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+		request = Net::HTTP::Post.new(GITHUB_MARKDOWN_RENDERER.request_uri)
+		request.body = src
+		request['Content-Type'] = 'text/plain'
+
+		response = http.request(request)
+
+		response.value
+		response.body
+	end
+end
+
 def concat
 	template = "// File -- %s\n%s"
 
@@ -403,9 +443,9 @@ def concat
 	Dir.glob(File.join(DIR, 'lib', '*')).push(File.join(DIR, 'index.js')).each do |path|
 		path = File.absolute_path(path, DIR)
 
-		File.open(path, 'r') do |f|
-			out << template % [path.gsub(DIR, '/').gsub(/^\/*/, './'), f.read]
-		end
+		#File.open(path, 'r') do |f|
+		out << template % [path.gsub(DIR, '/').gsub(/^\/*/, './'), read_file(path)]
+		#end
 	end
 
 	out.join("\n")
@@ -450,7 +490,16 @@ end
 
 def main(options)
 	if options[:server]
-		HTTPServer.new(options[:server]).listen
+		HTTPServer.new(options[:server]) {
+			get('/*.md') do |request, response|
+				path = File.join(DIR, request.path)
+				
+				response.body = '<!DOCTYPE html><html><head><link href="http://kevinburke.bitbucket.org/markdowncss/markdown.css" rel="stylesheet" type="text/css"></head><body>%s</body></html>' % render_markdown(read_file(path))
+				response.headers[:content_type] = 'text/html; charset=utf-8'
+
+				response
+			end
+		}.listen
 		return
 	end
 
