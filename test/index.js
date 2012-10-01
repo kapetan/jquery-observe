@@ -450,4 +450,34 @@
 
 		helper($li).remove();
 	});
+	test('Match on deep insert', function() {
+		stop();
+		expect(2);
+
+		var $ul = $fixture.find('ul');
+
+		$ul.observe('childlist', 'li span div em', function(record) {
+			equal(this, $ul.find('li:last span div em')[0], 'Added em element');
+			equal('childList', record.type);
+
+			start();
+		});
+
+		helper($ul.find('li:last span')).add('<div><em></em></div>');
+	});
+	test('Match on deep removale', function() {
+		stop();
+		expect(2);
+
+		var $container = $('#container');
+
+		$container.observe('childlist', 'div ul li .last-li', function(record) {
+			equal(this, $('#content')[0], 'Removed ul element');
+			equal('childList', record.type);
+
+			start();
+		});
+
+		helper($container.find('ul')).remove();
+	});
 }());

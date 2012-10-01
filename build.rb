@@ -148,7 +148,14 @@ class HTTPServer
 			def error(err)
 				code = err.is_a?(ResponseError) ? err.code : 500
 
-				Response.new(code, err.message)
+				message = err.message
+
+				if err.backtrace
+					trace = err.backtrace.join("\n\t")
+					message = "#{message}\n\t#{trace}"
+				end
+
+				Response.new(code, message)
 			end
 		end
 
@@ -378,7 +385,9 @@ class HTTPServer
 		rescue Error => err
 			response = Response.error(err)
 		rescue Exception => err
+			logger.error(err.message)
 			response = Response.error(err)
+
 			raise err
 		ensure
 			logger.info("(#{session}) " + response.status_line)
@@ -535,7 +544,7 @@ def main(options)
 				end
 			end
 		}.listen
-		
+
 		return
 	end
 
