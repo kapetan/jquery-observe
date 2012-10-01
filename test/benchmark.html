@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Benchmark</title>
+
+	<script type='text/javascript' src='http://code.jquery.com/jquery.min.js'></script>
+	<script type='text/javascript' src='/test/benchmark.js'></script>
+
+	<script type="text/javascript" src="/lib/jquery-path.js"></script>
+	<script type="text/javascript" src="/lib/jquery-branch.js"></script>
+	<script type="text/javascript" src="/index.js"></script>
+
+	<style type='text/css'>
+		#fixture {
+			position: absolute;
+			top: -1000px;
+			left: -1000px;
+		}
+	</style>
+	<script type='text/javascript'>
+		$(function() {
+			var fillDom = function(height, depth) {
+				var current = $('#fixture');
+
+				for(var i = 0; i < depth; i++) {
+					for(var j = 0; j < height; j++) {
+						var pos = ('pos-' + i) + j;
+
+						current.append('<div class=' + pos + '></span>' + pos + '</span></div>');
+					}
+
+					current = $('<div></div>').appendTo(current);
+				}
+			};
+
+			fillDom(10, 5);
+
+			var suite = new Benchmark.Suite;
+			var node = $('#fixture div.pos-49').get(0);
+
+			suite
+				.add('$.fn.branch.find(selector)', function() {
+					$('#fixture').branch().find('div.pos-49');
+				})
+				.add('$.fn.find(selector)', function() {
+					$('#fixture').find('div.pos-49');
+				})
+				.add('$.fn.branch.find(node)', function() {
+					$('#fixture').branch().find(node);
+				})
+				.add('$.fn.find(node)', function() {
+					$('#fixture').find(node);
+				})
+				.on('cycle', function(e) {
+					console.log('Cycle', e, String(e.target));
+				})
+				.on('complete', function(e) {
+					console.log('Complete', this);
+				});
+
+			setTimeout(function() {
+				suite.run({ async: true });
+			}, 100);
+		});
+	</script>
+</head>
+<body>
+	<div id='fixture'>
+	</div>
+</body>
+</html>
