@@ -8,6 +8,8 @@ require 'socket'
 require 'logger'
 require 'thread'
 require 'erb'
+require 'digest/sha1'
+require 'time'
 
 DIR = File.absolute_path(File.dirname(__FILE__))
 
@@ -84,7 +86,7 @@ class HTTPServer
 
 			headers.each do |line|
 				line = line.split(/\s*:\s*/).map { |p| p.strip }
-				@headers[line.first] = line.last.split('-').map { |p| p.downcase }.join('_').to_sym
+				@headers[line.first.split('-').map { |p| p.downcase }.join('_').to_sym] = line.last
 			end
 		end
 
@@ -95,6 +97,31 @@ class HTTPServer
 		def body?
 			(method == :post or method == :put) and 
 				(headers[:content_length] and headers[:content_length] > 0)
+		end
+
+		def stale?(response, options)
+			options[:etag] = Digest::SHA1.hexdigest(options[:etag].to_s) if options[:etag]
+			options[:last_modified] = options[:last_modified].httpdate if options[:last_modified].is_a?(Time)
+
+			stale = { 
+				:etag => :if_none_match, 
+				:last_modified => :if_modified_since 
+			}.any? do |k, v|
+				options[k] ? options[k] != headers[v] : false
+			end
+
+			p headers, options, stale
+
+			if not stale
+				response.code = 304
+				response.body = ''
+			else
+				response = yield if block_given?
+			end
+
+			[:etag, :last_modified].each { |n| response.headers[n] = options[n] if options[n] }
+
+			response
 		end
 	end
 	class Response
@@ -147,7 +174,7 @@ class HTTPServer
 			end
 
 			@headers[:content_length] = body.bytesize
-			@headers[:date] = Time.now.utc.strftime('%a, %d %b %Y %H:%M:%S GMT')
+			@headers[:date] = Time.now.httpdate
 
 			result = [status_line]
 
@@ -215,11 +242,6 @@ class HTTPServer
 	def listen
 		# Start new thread, so that interrupt (ctrl-c) doesn't hang
 		Thread.new {
-			Signal.trap('INT') {
-				logger.info('Shutting down...')
-				close
-			}
-
 			@server = TCPServer.new(@hostname, @port)
 
 			logger.info("Server started #{@hostname}:#{@port}")
@@ -249,10 +271,10 @@ class HTTPServer
 
 	def route(request)
 		route = @routes[request.method]
-		route &&= route.find { |r, _| File.fnmatch?(r, request.path) }.last
+		route &&= route.find { |r, _| File.fnmatch?(r, request.path) }
 
 		if route
-			resp = route.call(request, Response.new)
+			resp = route.last.call(request, Response.new)
 
 			if not resp.is_a?(Response)
 				resp = Response.new(200, resp)
@@ -423,7 +445,8 @@ def read_file(path)
 end
 
 def render_markdown(src)
-	Net::HTTP.start(GITHUB_MARKDOWN_RENDERER.host, GITHUB_MARKDOWN_RENDERER.port, :use_ssl => true, :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+	Net::HTTP.start(GITHUB_MARKDOWN_RENDERER.host, GITHUB_MARKDOWN_RENDERER.port, 
+			:use_ssl => true, :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
 		request = Net::HTTP::Post.new(GITHUB_MARKDOWN_RENDERER.request_uri)
 		request.body = src
 		request['Content-Type'] = 'text/plain'
@@ -443,9 +466,7 @@ def concat
 	Dir.glob(File.join(DIR, 'lib', '*')).push(File.join(DIR, 'index.js')).each do |path|
 		path = File.absolute_path(path, DIR)
 
-		#File.open(path, 'r') do |f|
 		out << template % [path.gsub(DIR, '/').gsub(/^\/*/, './'), read_file(path)]
-		#end
 	end
 
 	out.join("\n")
@@ -494,10 +515,24 @@ def main(options)
 			get('/*.md') do |request, response|
 				path = File.join(DIR, request.path)
 				
-				response.body = '<!DOCTYPE html><html><head><link href="http://kevinburke.bitbucket.org/markdowncss/markdown.css" rel="stylesheet" type="text/css"></head><body>%s</body></html>' % render_markdown(read_file(path))
-				response.headers[:content_type] = 'text/html; charset=utf-8'
+				body = <<-EOF 
+					<!DOCTYPE html>
+					<html>
+						<head>
+							<link href="http://kevinburke.bitbucket.org/markdowncss/markdown.css" rel="stylesheet" type="text/css">
+						</head>
+						<body>
+							%s
+						</body>
+					</html>
+				EOF
 
-				response
+				request.stale?(response, :etag => File.mtime(path)) do
+					response.body = body % render_markdown(read_file(path))
+					response.headers[:content_type] = 'text/html; charset=utf-8'
+
+					response
+				end
 			end
 		}.listen
 		return
@@ -511,4 +546,8 @@ def main(options)
 	out(src)
 end
 
-main(options)
+begin
+	main(options)
+rescue Interrupt => err
+	puts 'Shutting down...'
+end

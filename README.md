@@ -27,7 +27,7 @@ $('#content')
 ```
 The callback function gets passed the [MutationRecord][w3_mr] instance matching the query.
 
-The first argument can either be a string or an object containing the options which are passed to `MutaionObserver.observe()` method. See the [w3 documentation][w3_mo] for Mutation Observer for more information on the available options.
+The first argument can either be a string or an object containing the options which are passed to `MutaionObserver.observe()` method. See the [w3c documentation][w3_mo] for Mutation Observer for more information on the available options.
 
 All the above observers are collapsed into a single Mutation Observer object using #content as target.
 
