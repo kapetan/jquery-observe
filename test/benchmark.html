@@ -3,6 +3,7 @@
 <head>
 	<title>Benchmark</title>
 
+	<script type='text/javascript' src='https://www.google.com/jsapi'></script>
 	<script type='text/javascript' src='http://code.jquery.com/jquery.min.js'></script>
 	<script type='text/javascript' src='/test/benchmark.js'></script>
 
@@ -11,14 +12,214 @@
 	<script type="text/javascript" src="/index.js"></script>
 
 	<style type='text/css'>
+		#content {
+			font-family: "Helvetica Neue Light", "HelveticaNeue-Light", "Helvetica Neue", Calibri, Helvetica, Arial, sans-serif;
+		}
+		#content .title {
+			padding: 0.5em 0 0.5em 1em;
+			margin: 0;
+
+			color: #C2CCD1;
+			background-color: #0d3349;
+
+			font-size: 1.5em;
+			line-height: 1em;
+			font-weight: normal;
+
+			border-radius: 5px 5px 0 0;
+			-moz-border-radius: 5px 5px 0 0;
+			-webkit-border-top-right-radius: 5px;
+			-webkit-border-top-left-radius: 5px;
+		}
+		#content .ruler {
+			height: 5px;
+			background-color: #C6E746;
+		}
+		#content .user-agent {
+			font-size: small;
+			margin: 0;
+			padding: 0.5em 0 0.5em 2.5em;
+			background-color: #2b81af;
+			color: #fff;
+			text-shadow: rgba(0, 0, 0, 0.5) 2px 2px 1px;
+		}
+		#content .status {
+			font-size: small;
+			margin: 0;
+			padding: 0.5em 0.5em 0.5em 2.5em;
+
+			color: #2b81af;
+			background-color: #D2E0E6;
+
+			border-bottom: 1px solid white;
+		}
+		#content .status .complete {
+			display: none;
+		}
+		#content .status .fastest {
+			font-weight: bold;
+		}
+		#content .benchmarks {
+			list-style-position: inside;
+			margin: 0;
+			padding: 0;
+		}
+		#content .benchmarks li {
+			font-size: small;
+			padding: 0.4em 0.5em 0.4em 2.5em;
+			border-bottom: 1px solid #fff;
+			list-style-position: inside;
+			color: #528CE0; 
+			background-color: #D2E0E6;
+		}
+		#content .benchmarks li:last-child {
+			border-radius: 0 0 5px 5px;
+			-moz-border-radius: 0 0 5px 5px;
+			-webkit-border-bottom-right-radius: 5px;
+			-webkit-border-bottom-left-radius: 5px;
+		}
+		#content .benchmark-name {
+			font-weight: bold;
+		}
+		#content .benchmark-result {
+			color: #366097;
+		}
+		#chart {
+			width: 960px;
+			height: 400px;
+			margin: 0 auto;
+		}
+
 		#fixture {
 			position: absolute;
 			top: -1000px;
 			left: -1000px;
 		}
 	</style>
+
+	<script type='text/html' id='template-benchmark'>
+		<li>
+			<span class='benchmark-name'></span>: 
+			<span class='benchmark-result'></span>
+		</li>
+	</script>
+
 	<script type='text/javascript'>
-		$(function() {
+		google.load('visualization', '1', { packages: ['corechart'] });
+
+		google.setOnLoadCallback(function() {
+			var $content = $('#content');
+
+			$content.find('.user-agent').text(navigator.userAgent);
+
+			var benchmark = window.benchmark = {
+				MAX_TEST_SIZE: 8,
+				cycle: function(e) {
+					var bench = e.target;
+					var res = bench.toString().replace(bench.name + ' x ', '');
+					var template = $($('#template-benchmark').html());
+
+					template.find('.benchmark-name').text(bench.name);
+					template.find('.benchmark-result').text(res);
+
+					$content.find('.benchmarks').append(template);
+				},
+				complete: function(suite) {
+					var $complete = $content.find('.complete');
+
+					$complete.find('.no').text(suite.length);
+					$complete.find('.fastest').text(suite.filter('fastest').pluck('name'));
+
+					$content.find('.running').hide();
+					$complete.show();
+
+					this._save(suite);
+					this._chart(this._load());
+				},
+				_chart: function(tests) {
+					var self = this;
+
+					var data = [];
+					var testSize = Object.keys(tests).reduce(function(acc, name) {
+						return Math.max(acc, tests[name].length);
+					}, 0);
+
+					Object.keys(tests).forEach(function(name) {
+						var test = tests[name];
+						var row = [name];
+
+						for(var i = 0; i < testSize; i++) {
+							var bench = test[i];
+
+							if(bench) {
+								row.push(bench.hz);
+								row.push([
+									bench.name + ' (run ' + (i + 1) + ')',
+									bench.hz.toFixed(0) + ' ops/sec',
+									'\xb1' + bench.rme.toFixed(2) + '%',
+									bench.size + ' runs sampled'
+								].join('\n'));
+							} else {
+								row.push(0);
+								row.push('');
+							}
+						}
+						
+						data.push(row);
+					});
+
+					var chart = new google.visualization.ColumnChart($('#chart').get(0));
+					var dataTable = new google.visualization.DataTable();
+
+					dataTable.addColumn('string', 'name');
+
+					for(var i = 0; i < testSize; i++) {
+						dataTable.addColumn('number', 'Run ' + (i + 1));
+						dataTable.addColumn({ type: 'string', role: 'tooltip' });
+					}
+
+					dataTable.addRows(data);
+
+					chart.draw(dataTable, {
+						title: 'Benchmark Results',
+						hAxis: { title: 'Name' },
+						vAxis: { title: 'ops/sec' },
+						tooltip: { textStyle: { fontSize: 11 } }
+					});
+				},
+				_save: function(suite) {
+					var suites = this._load();
+					var now = Date.now();
+
+					for(var i = 0; i < suite.length; i++) {
+						var bench = suite[i];
+						var stored = suites[bench.name] = suites[bench.name] || [];
+
+						stored.push({
+							timestamp: now,
+							name: bench.name,
+							hz: Math.round(bench.hz),
+							size: bench.stats.sample.length,
+							rme: bench.stats.rme
+						});
+
+						if(stored.length > this.MAX_TEST_SIZE) {
+							stored.splice(0, 1);
+						}
+					}
+
+					localStorage.setItem('benchmark', JSON.stringify(suites));
+
+					return suites;
+				},
+				_load: function() {
+					return JSON.parse(localStorage.getItem('benchmark') || '{}');
+				},
+				_clear: function() {
+					localStorage.removeItem('benchmark');
+				}
+			};
+
 			var fillDom = function(height, depth) {
 				var current = $('#fixture');
 
@@ -52,10 +253,10 @@
 					$('#fixture').find(node);
 				})
 				.on('cycle', function(e) {
-					console.log('Cycle', e, String(e.target));
+					benchmark.cycle(e);
 				})
 				.on('complete', function(e) {
-					console.log('Complete', this);
+					benchmark.complete(this);
 				});
 
 			setTimeout(function() {
@@ -65,6 +266,22 @@
 	</script>
 </head>
 <body>
+	<div id='content'>
+		<h1 class='title'>jQuery Observe Benchmark</h1>
+		<div class='ruler'></div>
+		<div class='user-agent'></div>
+		<div class='status'>
+			<div class='running'>Running...</div>
+			<div class='complete'>
+				<div>Benchmark completed</div>
+				<div><span class='no'></span> test(s) run, <span class='fastest'></span> was fastest</div>
+			</div>
+		</div>
+		<ol class='benchmarks'></ol>
+
+		<div id='chart'></div>
+	</div>
+
 	<div id='fixture'>
 	</div>
 </body>
