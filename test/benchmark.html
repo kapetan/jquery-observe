@@ -35,6 +35,24 @@
 			height: 5px;
 			background-color: #C6E746;
 		}
+		#content .toolbar {
+			padding: 0.5em 0 0.5em 2.5em;
+			color: #5E740B;
+			background-color: #eee;
+			overflow: hidden;
+			font-size: small;
+			line-height: 20px;
+		}
+		#content .toolbar .action {
+			margin-right: 20px;
+			color: #00E;
+		}
+		#content .toolbar .action:hover {
+			text-decoration: none;
+		}
+		#content .toolbar .action:visisted {
+			color: #00E;
+		}
 		#content .user-agent {
 			font-size: small;
 			margin: 0;
@@ -111,6 +129,9 @@
 		google.load('visualization', '1', { packages: ['corechart'] });
 
 		google.setOnLoadCallback(function() {
+			var FIXTURE_DEPTH = 5;
+			var FIXTURE_HEIGHT = 10;
+
 			var $content = $('#content');
 
 			$content.find('.user-agent').text(navigator.userAgent);
@@ -119,7 +140,10 @@
 				MAX_TEST_SIZE: 8,
 				start: function() {
 					$content.find('.idle').hide();
+					$content.find('.complete').hide();
 					$content.find('.running').show();
+
+					$content.find('.benchmarks li').remove();
 				},
 				cycle: function(e) {
 					var bench = e.target;
@@ -141,9 +165,14 @@
 					$complete.show();
 
 					this._save(suite);
-					this._chart(this._load());
+					this.chart();
 				},
-				_chart: function(tests) {
+				clearData: function() {
+					localStorage.removeItem('benchmark');
+				},
+				chart: function(tests) {
+					tests = tests || this._load();
+
 					var self = this;
 
 					var data = [];
@@ -221,13 +250,10 @@
 				},
 				_load: function() {
 					return JSON.parse(localStorage.getItem('benchmark') || '{}');
-				},
-				_clear: function() {
-					localStorage.removeItem('benchmark');
 				}
 			};
 
-			var fillDom = function(height, depth) {
+			(function(height, depth) {
 				var current = $('#fixture');
 
 				for(var i = 0; i < depth; i++) {
@@ -239,38 +265,61 @@
 
 					current = $('<div></div>').appendTo(current);
 				}
+			}(FIXTURE_HEIGHT, FIXTURE_DEPTH));
+
+			var createAndRunSuite = function() {
+				var suite = new Benchmark.Suite;
+				var node = $('#fixture div.pos-49').get(0);
+
+				var original = createAndRunSuite;
+
+				createAndRunSuite = function() {
+					console.log('Suite already running...');
+				};
+
+				suite
+					.add('$.fn.branch.find(selector)', function() {
+						$('#fixture').branch().find('div.pos-49');
+					})
+					.add('$.fn.find(selector)', function() {
+						$('#fixture').find('div.pos-49');
+					})
+					.add('$.fn.branch.find(node)', function() {
+						$('#fixture').branch().find(node);
+					})
+					.add('$.fn.find(node)', function() {
+						$('#fixture').find(node);
+					})
+					.on('start', function() {
+						benchmark.start();
+					})
+					.on('cycle', function(e) {
+						benchmark.cycle(e);
+					})
+					.on('complete', function(e) {
+						benchmark.complete(this);
+						createAndRunSuite = original;
+					});
+
+				suite.run({ async: true });
 			};
 
-			fillDom(10, 5);
 
-			var suite = new Benchmark.Suite;
-			var node = $('#fixture div.pos-49').get(0);
+			$content.find('.toolbar')
+				.on('click', '.run-benchmark', function() {
+					createAndRunSuite();
+				})
+				.on('click', '.clear-data', function() {
+					var yes = window.confirm('This will delete all benchmark data. Are you sure?');
 
-			suite
-				.add('$.fn.branch.find(selector)', function() {
-					$('#fixture').branch().find('div.pos-49');
-				})
-				.add('$.fn.find(selector)', function() {
-					$('#fixture').find('div.pos-49');
-				})
-				.add('$.fn.branch.find(node)', function() {
-					$('#fixture').branch().find(node);
-				})
-				.add('$.fn.find(node)', function() {
-					$('#fixture').find(node);
-				})
-				.on('start', function() {
-					benchmark.start();
-				})
-				.on('cycle', function(e) {
-					benchmark.cycle(e);
-				})
-				.on('complete', function(e) {
-					benchmark.complete(this);
+					if(yes) {
+						benchmark.clearData();
+					}
 				});
 
+
 			setTimeout(function() {
-				suite.run({ async: true });
+				benchmark.chart();
 			}, 100);
 		});
 	</script>
@@ -279,6 +328,10 @@
 	<div id='content'>
 		<h1 class='title'>jQuery Observe Benchmark</h1>
 		<div class='ruler'></div>
+		<div class='toolbar'>
+			<a class='run-benchmark action' href='javascript:void(0);'>Run benchmark</a>
+			<a class='clear-data action' href='javascript:void(0);'>Clear data</a>
+		</div>
 		<div class='user-agent'></div>
 		<div class='status'>
 			<div class='idle'>Idle</div>
@@ -293,7 +346,6 @@
 		<div id='chart'></div>
 	</div>
 
-	<div id='fixture'>
-	</div>
+	<div id='fixture'></div>
 </body>
 </html>
