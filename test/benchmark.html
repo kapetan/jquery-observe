@@ -53,7 +53,12 @@
 		#content .toolbar .action:visisted {
 			color: #00E;
 		}
+		#content .toolbar .select-test {
+			float: right;
+			padding-right: 20px;
+		}
 		#content .user-agent {
+			font-weight: bold;
 			font-size: small;
 			margin: 0;
 			padding: 0.5em 0 0.5em 2.5em;
@@ -137,7 +142,6 @@
 			$content.find('.user-agent').text(navigator.userAgent);
 
 			var benchmark = window.benchmark = {
-				MAX_TEST_SIZE: 8,
 				start: function() {
 					$content.find('.idle').hide();
 					$content.find('.complete').hide();
@@ -163,16 +167,8 @@
 
 					$content.find('.running').hide();
 					$complete.show();
-
-					this._save(suite);
-					this.chart();
-				},
-				clearData: function() {
-					localStorage.removeItem('benchmark');
 				},
 				chart: function(tests) {
-					tests = tests || this._load();
-
 					var self = this;
 
 					var data = [];
@@ -222,34 +218,6 @@
 						vAxis: { title: 'ops/sec' },
 						tooltip: { textStyle: { fontSize: 11 } }
 					});
-				},
-				_save: function(suite) {
-					var suites = this._load();
-					var now = Date.now();
-
-					for(var i = 0; i < suite.length; i++) {
-						var bench = suite[i];
-						var stored = suites[bench.name] = suites[bench.name] || [];
-
-						stored.push({
-							timestamp: now,
-							name: bench.name,
-							hz: Math.round(bench.hz),
-							size: bench.stats.sample.length,
-							rme: bench.stats.rme
-						});
-
-						if(stored.length > this.MAX_TEST_SIZE) {
-							stored.splice(0, 1);
-						}
-					}
-
-					localStorage.setItem('benchmark', JSON.stringify(suites));
-
-					return suites;
-				},
-				_load: function() {
-					return JSON.parse(localStorage.getItem('benchmark') || '{}');
 				}
 			};
 
@@ -267,59 +235,171 @@
 				}
 			}(FIXTURE_HEIGHT, FIXTURE_DEPTH));
 
-			var createAndRunSuite = function() {
-				var suite = new Benchmark.Suite;
-				var node = $('#fixture div.pos-49').get(0);
+			var suite = {
+				NS: 'tests.',
+				MAX_TEST_SIZE: 8,
+				tests: {},
+				active: null,
+				tests: function() {
+					var self = this;
+					var result = [];
 
-				var original = createAndRunSuite;
-
-				createAndRunSuite = function() {
-					console.log('Suite already running...');
-				};
-
-				suite
-					.add('$.fn.branch.find(selector)', function() {
-						$('#fixture').branch().find('div.pos-49');
-					})
-					.add('$.fn.find(selector)', function() {
-						$('#fixture').find('div.pos-49');
-					})
-					.add('$.fn.branch.find(node)', function() {
-						$('#fixture').branch().find(node);
-					})
-					.add('$.fn.find(node)', function() {
-						$('#fixture').find(node);
-					})
-					.on('start', function() {
-						benchmark.start();
-					})
-					.on('cycle', function(e) {
-						benchmark.cycle(e);
-					})
-					.on('complete', function(e) {
-						benchmark.complete(this);
-						createAndRunSuite = original;
+					this._eachTest(function(key) {
+						result.push(key.replace(self.NS, ''))
 					});
 
-				suite.run({ async: true });
+					return result;
+				},
+				run: function(testName) {
+					if(this.active) {
+						throw new Error('Suite already running');
+					}
+
+					var tests = this.tests[testName];
+
+					if(!tests || !testName) {
+						throw new Error('No tests with name ' + testName);
+					}
+
+					var suite = this.active = new Benchmark.Suite;
+					var self = this;
+
+					Object.keys(tests).forEach(function(name) {
+						if(/^_/.test(name) || typeof tests[name] !== 'function') {
+							return;
+						}
+
+						suite.add(name, tests[name]);
+					});
+
+					suite
+						.on('start', function() {
+							benchmark.start();
+						})
+						.on('cycle', function(e) {
+							benchmark.cycle(e);
+						})
+						.on('complete', function(e) {
+							var res = self._save(testName);
+							
+							benchmark.complete(this);
+							benchmark.chart(res);
+
+							self.active = null;
+						});
+
+					suite.run({ async: true });
+				},
+				load: function(testName) {
+					if(testName) {
+						return JSON.parse(localStorage.getItem(this._id(testName)) || '{}');
+					}
+
+					var self = this;
+					var result = {};
+
+					this._eachTest(function(key) {
+						result[key.replace(self.NS, '')] = JSON.parse(localStorage.getItem(key));
+					});
+
+					return result;
+				},
+				clear: function(testName) {
+					if(testName) {
+						localStorage.removeItem(this._id(testName));
+						return
+					}
+
+					this._eachTest(function(key) {
+						localStorage.removeItem(key);
+					});
+				},
+				_save: function(testName) {
+					var suites = this.load(testName);
+					var now = Date.now();
+
+					for(var i = 0; i < this.active.length; i++) {
+						var bench = this.active[i];
+						var stored = suites[bench.name] = suites[bench.name] || [];
+
+						stored.push({
+							timestamp: now,
+							name: bench.name,
+							hz: Math.round(bench.hz),
+							size: bench.stats.sample.length,
+							rme: bench.stats.rme
+						});
+
+						if(stored.length > this.MAX_TEST_SIZE) {
+							stored.splice(0, 1);
+						}
+					}
+
+					localStorage.setItem(this._id(testName), JSON.stringify(suites));
+
+					return suites;
+				},
+				_id: function(key) {
+					return this.NS + key;
+				},
+				_eachTest: function(fn) {
+					for(var i = 0; i < localStorage.length; i++) {
+						var key = localStorage.key(i);
+
+						if(key.indexOf(this.NS) !== 0) {
+							continue;
+						}
+
+						fn(key);
+					}
+				}
+			};
+			suite.tests.branching = {
+				_node: $('#fixture div.pos-49').get(0),
+				'$.fn.branch.find(selector)': function() {
+					$('#fixture').branch().find('div.pos-49');
+				},
+				'$.fn.find(selector)': function() {
+					$('#fixture').find('div.pos-49');
+				},
+				'$.fn.branch.find(node)': function() {
+					$('#fixture').branch().find(suite.tests._node);
+				},
+				'$.fn.find(node)': function() {
+					$('#fixture').find(suite.tests._node);
+				}
 			};
 
+			var $select = $content.find('.select-test select');
+
+			suite.tests().forEach(function(test) {
+				var name = test.charAt(0).toUpperCase() + test.slice(1);
+
+				$select.append('<option value="' + test + '">' + name + '</option>');
+			});
 
 			$content.find('.toolbar')
 				.on('click', '.run-benchmark', function() {
-					createAndRunSuite();
+					var test = $select.val();
+
+					if(test) {
+						suite.run(test);
+					}
 				})
 				.on('click', '.clear-data', function() {
 					var yes = window.confirm('This will delete all benchmark data. Are you sure?');
 
 					if(yes) {
-						benchmark.clearData();
+						suite.clear();
 					}
 				});
 
-
 			setTimeout(function() {
-				benchmark.chart();
+				var test = suite.tests()[0];
+
+				if(test) {
+					benchmark.chart(suite.load(test));
+				}
 			}, 100);
 		});
 	</script>
@@ -331,6 +411,10 @@
 		<div class='toolbar'>
 			<a class='run-benchmark action' href='javascript:void(0);'>Run benchmark</a>
 			<a class='clear-data action' href='javascript:void(0);'>Clear data</a>
+			<span class='select-test'>
+				<label>Test:</label>
+				<select></select>
+			</span>
 		</div>
 		<div class='user-agent'></div>
 		<div class='status'>
