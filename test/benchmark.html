@@ -53,6 +53,9 @@
 
 			border-bottom: 1px solid white;
 		}
+		#content .status .running {
+			display: none;
+		}	
 		#content .status .complete {
 			display: none;
 		}
@@ -114,6 +117,10 @@
 
 			var benchmark = window.benchmark = {
 				MAX_TEST_SIZE: 8,
+				start: function() {
+					$content.find('.idle').hide();
+					$content.find('.running').show();
+				},
 				cycle: function(e) {
 					var bench = e.target;
 					var res = bench.toString().replace(bench.name + ' x ', '');
@@ -252,6 +259,9 @@
 				.add('$.fn.find(node)', function() {
 					$('#fixture').find(node);
 				})
+				.on('start', function() {
+					benchmark.start();
+				})
 				.on('cycle', function(e) {
 					benchmark.cycle(e);
 				})
@@ -271,6 +281,7 @@
 		<div class='ruler'></div>
 		<div class='user-agent'></div>
 		<div class='status'>
+			<div class='idle'>Idle</div>
 			<div class='running'>Running...</div>
 			<div class='complete'>
 				<div>Benchmark completed</div>
