@@ -228,10 +228,10 @@
 					for(var j = 0; j < height; j++) {
 						var pos = ('pos-' + i) + j;
 
-						current.append('<div class=' + pos + '></span>' + pos + '</span></div>');
+						current.append('<div class="' + pos + '"></span>' + pos + '</span></div>');
 					}
 
-					current = $('<div></div>').appendTo(current);
+					current = $('<div class="depth-' + (i + 1) + '"></div>').appendTo(current);
 				}
 			}(FIXTURE_HEIGHT, FIXTURE_DEPTH));
 
@@ -240,7 +240,7 @@
 				MAX_TEST_SIZE: 8,
 				tests: {},
 				active: null,
-				tests: function() {
+				testNames: function() {
 					var self = this;
 					var result = [];
 
@@ -354,6 +354,7 @@
 					}
 				}
 			};
+
 			suite.tests.branching = {
 				_node: $('#fixture div.pos-49').get(0),
 				'$.fn.branch.find(selector)': function() {
@@ -363,16 +364,79 @@
 					$('#fixture').find('div.pos-49');
 				},
 				'$.fn.branch.find(node)': function() {
-					$('#fixture').branch().find(suite.tests._node);
+					$('#fixture').branch().find(suite.tests.branching._node);
 				},
 				'$.fn.find(node)': function() {
-					$('#fixture').find(suite.tests._node);
+					$('#fixture').find(suite.tests.branching._node);
+				}
+			};
+
+			var $matchingTarget = $('#fixture .depth-4');
+			var matchingHandler = function(record) {};
+
+			suite.tests.matching = {
+				_childListRecord: {
+					type: 'childList',
+					target: $matchingTarget.get(0), 
+					addedNodes: $matchingTarget.children().get(), 
+					removedNodes: $matchingTarget.children().clone().get()
+				},
+				_attributeRecord: {
+					type: 'attributes',
+					target: $matchingTarget.get(0),
+					attributeName: 'class'
+				},
+				_patternAdded: new $.Observe.Pattern('#fixture', { added: true }, '.depth-4 .pos-49', matchingHandler),
+				_patternRemoved: new $.Observe.Pattern('#fixture', { removed: true }, '.depth-4 .pos-49', matchingHandler),
+				_patternAttributes: new $.Observe.Pattern('#fixture', { attributes: true }, '.depth-4 .pos-49', matchingHandler),
+				'Pattern#_matchAddedNodes': function() {
+					suite.tests.matching._patternAdded.match(suite.tests.matching._childListRecord);
+				},
+				'Pattern#_matchRemovedNodes': function() {
+					suite.tests.matching._patternRemoved.match(suite.tests.matching._childListRecord);
+				},
+				'Pattern#_matchAttributesAndCharacterData': function() {
+					suite.tests.matching._patternAttributes.match(suite.tests.matching._attributeRecord);
+				},
+				'$.fn.find': function() {
+					$('#fixture').find('.depth-4 .pos-49');
 				}
 			};
 
 			var $select = $content.find('.select-test select');
+			var hash = function(name, value) {
+				var result = {};
+				var hash = window.location.hash.replace(/^#/, '').split('&');
 
-			suite.tests().forEach(function(test) {
+				hash
+					.filter(function(pair) {
+						return !!pair;
+					})
+					.forEach(function(pair) {
+						pair = pair.split('=');
+						result[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1]);
+					});
+
+				if(name === undefined) {
+					return result;
+				}
+				if(value === undefined) {
+					return result[name];
+				}
+
+				result[name] = value;
+				var arr = [];
+
+				Object.keys(result).forEach(function(key) {
+					arr.push(encodeURIComponent(key) + '=' + encodeURIComponent(result[key]));
+				});
+
+				window.location.hash = arr.join('&');
+
+				return result;
+			};
+
+			Object.keys(suite.tests).forEach(function(test) {
 				var name = test.charAt(0).toUpperCase() + test.slice(1);
 
 				$select.append('<option value="' + test + '">' + name + '</option>');
@@ -392,12 +456,21 @@
 					if(yes) {
 						suite.clear();
 					}
+				})
+				.on('change', 'select', function() {
+					var name = $select.val();
+
+					if(suite.tests[name]) {
+						hash('test', name);
+						benchmark.chart(suite.load(name));
+					}
 				});
 
 			setTimeout(function() {
-				var test = suite.tests()[0];
+				var test = hash('test') || suite.testNames()[0];
 
 				if(test) {
+					$select.val(test);
 					benchmark.chart(suite.load(test));
 				}
 			}, 100);

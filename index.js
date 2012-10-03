@@ -453,6 +453,12 @@
 		}
 	};
 
+	$.Observe = {
+		Pattern: Pattern,
+		MutationObserver: Observer,
+		DOMEventObserver: DOMEventObserver
+	};
+
 	$.fn.observe = function(options, selector, handler) {
 		if(!selector) {
 			handler = options;
