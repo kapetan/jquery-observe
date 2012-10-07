@@ -110,8 +110,6 @@ class HTTPServer
 				options[k] ? options[k] != headers[v] : false
 			end
 
-			p headers, options, stale
-
 			if not stale
 				response.code = 304
 				response.body = ''
@@ -281,14 +279,15 @@ class HTTPServer
 		route &&= route.find { |r, _| File.fnmatch?(r, request.path) }
 
 		if route
-			resp = route.last.call(request, Response.new)
+			response = Response.new
+			result = route.last.call(request, response)
 
-			if not resp.is_a?(Response)
-				resp = Response.new(200, resp)
-				resp.headers[:content_type] = 'text/plain; charset=utf-8'
+			if not result.is_a?(Response)
+				response.body = result.to_s
+				response.headers[:content_type] = 'text/plain; charset=utf-8'
 			end
 
-			resp
+			response
 		else
 			file(request)
 		end
@@ -327,7 +326,7 @@ class HTTPServer
 				:mtime => File.mtime(f).strftime('%Y-%m-%d %H:%M:%S')
 			}
 		}.sort { |x, y|
-			if x[:type] === y[:type]
+			if x[:type] == y[:type]
 				x[:title].downcase <=> y[:title].downcase
 			elsif x[:type] == :directory
 				-1
