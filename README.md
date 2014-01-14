@@ -1,12 +1,16 @@
 # jQuery Observe
 
-A jQuery plugin which simplifies the use of the new [DOM Mutation Observer][w3_mo] interface introduced in newer browsers.
+A jQuery plugin which simplifies the use of the new [DOM Mutation Observer][w3_mo] interface introduced in newer browsers. `jquery-observe.js` contains the compiled and minified version of the plugin.
+
+Available through `bower`
+
+	bower install jquery-observe
 
 # Compatibility
 
 At this point the Mutation Observer API is only available in newer versions of Google Chrome (>= 18) and Mozillza Firefox (>= 14). Can be usefull when developing extensions (add-ons) that use content scripts, on a page that you don't control.
 
-There is a fallback for browsers who don't support the Mutation Observer API (mainly IE9 and Opera), using the deprecated [DOM Mutaion Events interface][w3_me]. These don't act completely as Mutation Observers, and can cause some different behaviour between browsers. 
+There is a fallback for browsers who don't support the Mutation Observer API (mainly IE9 and Opera), using the deprecated [DOM Mutaion Events interface][w3_me]. These don't act completely as Mutation Observers, and can cause some different behaviour between browsers.
 For instance an event is fired for every descendant of an inserted node, where only one record is dispatched when using Mutation Observers. Furthermore because mutation events don't have the same information associated with them as Mutation Observer records, some contextual selectors may not match removed nodes. Some of those are `:first`, `:first-child`, `:eq`, `:last`, `:last-child`, `:even` and `:odd` (not an exhaustive list).
 
 # Usage
@@ -102,16 +106,16 @@ Use the `$.fn.disconnect()` method to remove an observer. The arguments must mat
 
 There are some problems getting the characterData option to work in Chrome (may be because of bug [#134322][chrome_bug]).
 
-# License 
+# License
 
 **This software is licensed under "MIT"**
 
 > Copyright (c) 2012 Mirza Kapetanovic
-> 
+>
 > Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the 'Software'), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-> 
+>
 > The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-> 
+>
 > THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 [w3_mo]: http://dvcs.w3.org/hg/domcore/raw-file/tip/Overview.html#mutation-observers "Mutation Observer"
