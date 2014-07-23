@@ -1,84 +1,5 @@
 (function() {
-	var helper = function(elem) {
-		helperProxy._elem = elem;
-		return helperProxy;
-	}; 
-	helper.remove = function(elem, fn) {
-		this._run(function() { $(elem).remove() }, fn);
-	};
-	helper.add = function(elem, html, fn) {
-		this._run(function() { $(elem).append(html) }, fn);
-	};
-	helper.content = function(elem, html, fn) {
-		this._run(function() { $(elem).text(html) }, fn);
-	};
-	helper.text = function(elem, text, fn) {
-		this._run(function() {
-			elem = $(elem).get(0);
-
-			if(elem instanceof Text) {
-				elem.nodeValue = text;
-				return;
-			} 
-
-			elem = $(elem);
-			var contents = elem.contents();
-			var candidate;
-
-			for(var i = 0; i < contents.length; i++) {
-				var node = contents[i];
-
-				if(node instanceof Text) {
-					candidate = node;
-
-					if(node.nodeValue.trim()) {
-						node.nodeValue = text;
-						return;	
-					}
-				}
-			}
-
-			if(candidate) {
-				candidate.nodeValue = text;
-			}
-		}, fn);
-	};
-	helper.attr = function(elem, name, value, fn) {
-		this._run(function() { $(elem).attr(name, value) }, fn);
-	};
-	// Used in IE debugging
-	helper.ppObject = function(obj) {
-		var result = '\n{\n';
-
-		for(var name in obj) {
-			result += '\t' + name + ': ' + obj[name] + '\n'
-		}
-
-		console.log(result + '}');
-	};
-	helper.loadJs = function(src, callback) {
-		if(!Array.isArray(src)) {
-			src = [src];
-		}
-
-		var self = this;
-		var ready = src.length;
-		var error;
-
-
-		src.forEach(function(path) {
-			self._loadJs(path, function(err) {
-				error = error || err;
-
-				if(!--ready) {
-					setTimeout(function() {
-						(callback || function() {})(error);
-					}, 10);
-				}
-			});
-		});
-	};
-	helper._loadJs = function(src, callback) {
+	var loadJs = function(src, callback) {
 		var script = document.createElement('script');
 		var done;
 
@@ -116,20 +37,86 @@
 
 		first.parentNode.insertBefore(script, first);
 	};
-	helper._run = function(fn, callback) {
-		setTimeout(function() { fn(); (callback || function() {})(); }, 10);
+
+	var helper = {};
+
+	// Used in IE debugging
+	helper.ppObject = function(obj) {
+		var result = '\n{\n';
+
+		for(var name in obj) {
+			result += '\t' + name + ': ' + obj[name] + '\n'
+		}
+
+		console.log(result + '}');
 	};
 
-	var helperProxy = {};
+	helper.loadJs = function(src, callback) {
+		if(!Array.isArray(src)) {
+			src = [src];
+		}
 
-	['remove', 'add', 'text', 'content', 'attr'].forEach(function(name) {
-		helperProxy[name] = function() {
-			var args = Array.prototype.slice.call(arguments);
+		var self = this;
+		var ready = src.length;
+		var error;
 
-			args.splice(0, 0, this._elem);
-			helper[name].apply(helper, args);
+
+		src.forEach(function(path) {
+			loadJs(path, function(err) {
+				error = error || err;
+
+				if(!--ready) {
+					setTimeout(function() {
+						(callback || function() {})(error);
+					}, 10);
+				}
+			});
+		});
+	};
+
+	helper.$ = function(selector, context) {
+		var elem = $(selector, context).get(0);
+		var that = {};
+
+		that.attr = function(name, value) {
+			elem.setAttribute(name, value);
 		};
-	});
+
+		that.append = function(html) {
+			var div = document.createElement('div');
+			div.innerHTML = html;
+
+			while(div.firstChild) {
+				elem.appendChild(div.firstChild);
+			}
+		};
+
+		that.remove = function() {
+			if(elem.parentNode) elem.parentNode.removeChild(elem);
+		};
+
+		that.text = function(text) {
+			var children = elem.childNodes;
+			var candidate;
+
+			for(var i = 0; i < children.length; i++) {
+				var child = children[i];
+
+				if(child instanceof Text) {
+					candidate = child;
+					if(child.nodeValue.trim()) break;
+				}
+			}
+
+			if(candidate) candidate.nodeValue = text;
+		};
+
+		that.content = function(text) {
+			elem.textContent = text;
+		};
+
+		return that;
+	};
 
 	window.helper = helper;
 }());

@@ -1,6 +1,6 @@
 (function() {
 	var $fixture;
-	
+
 	QUnit.testStart(function() {
 		$fixture = $('#qunit-fixture');
 	});
@@ -25,7 +25,7 @@
 			start();
 		});
 
-		helper($ul).attr('data-attr', 'value');
+		helper.$($ul).attr('data-attr', 'value');
 	});
 	test('Double match (all, restrictive) on attribute changed', function() {
 		stop(2);
@@ -44,7 +44,7 @@
 			.observe('attributes', fn)
 			.observe({ attributes: true, attributeFilter: ['data-attr'] }, fn);
 
-		helper($ul).attr('data-attr', 'value');
+		helper.$($ul).attr('data-attr', 'value');
 	});
 	test('Double match (restrictive, all) on attribute changed', function() {
 		stop(2);
@@ -63,7 +63,7 @@
 			.observe({ attributes: true, attributeFilter: ['data-attr'] }, fn)
 			.observe('attributes', fn);
 
-		helper($ul).attr('data-attr', 'value');
+		helper.$($ul).attr('data-attr', 'value');
 	});
 	test('Single match (all, restrictive) on attribute changed', function() {
 		stop();
@@ -82,7 +82,7 @@
 			.observe('attributes', fn)
 			.observe({ attributes: true, attributeFilter: ['data-attr'] }, fn);
 
-		helper($ul).attr('data-other', 'value');
+		helper.$($ul).attr('data-other', 'value');
 	});
 	test('Single match (restrictive, all) on attribute changed', function() {
 		stop();
@@ -101,7 +101,7 @@
 			.observe({ attributes: true, attributeFilter: ['data-attr'] }, fn)
 			.observe('attributes', fn);
 
-		helper($ul).attr('data-other', 'value');
+		helper.$($ul).attr('data-other', 'value');
 	});
 	test('Node added', function() {
 		stop();
@@ -116,7 +116,7 @@
 			start();
 		});
 
-		helper($ul).add('<li>Item 0</li>');
+		helper.$($ul).append('<li>Item 0</li>');
 	});
 	test('Node removed', function() {
 		stop();
@@ -131,11 +131,11 @@
 			start();
 		});
 
-		helper($ul.find('li:first')).remove();
+		helper.$('li:first', $ul).remove();
 	});
 	test('Content swapped', function() {
-		stop(2);
-		expect(4);
+		stop();
+		expect(2);
 
 		var $header = $('#header');
 
@@ -146,7 +146,7 @@
 			start();
 		});
 
-		helper($header).content('value');
+		helper.$($header).content('value');
 	});
 	test('Character data changed', function() {
 		stop();
@@ -154,15 +154,14 @@
 
 		var $header = $('#header');
 
-		// Added subtree opition because of Chrome bug.
-		$header.observe('characterData subtree', function(record) {
+		$header.observe('characterdata subtree', function(record) {
 			equal(this, $header[0], 'Child text node value changed');
 			equal('characterData', record.type);
 
 			start();
 		});
 
-		helper($header).text('value');
+		helper.$($header).text('value');
 	});
 	test('Subtree option', function() {
 		stop();
@@ -177,7 +176,7 @@
 			start();
 		});
 
-		helper($ul.find('span')).remove();
+		helper.$('span', $ul).remove();
 	});
 
 	module('Observe child');
@@ -197,7 +196,7 @@
 			start();
 		});
 
-		helper($li).attr('data-attr', 'value');
+		helper.$($li).attr('data-attr', 'value');
 	});
 	test('Child node added', function() {
 		stop();
@@ -214,7 +213,7 @@
 			start();
 		});
 
-		helper($li).add('<span>value</span>');
+		helper.$($li).append('<span>value</span>');
 	});
 	test('Child node removed', function() {
 		stop();
@@ -231,7 +230,7 @@
 			start();
 		});
 
-		helper($li.find('span')).remove();
+		helper.$('span', $li).remove();
 	});
 	test('Removed child node with no siblings', function() {
 		stop();
@@ -246,31 +245,22 @@
 			start();
 		});
 
-		helper($span.find('a')).remove();
+		helper.$('a', $span).remove();
 	});
 	test('Swapped content of child node', function() {
-		stop(2);
-		expect(6);
+		stop();
+		expect(2);
 
 		var $ul = $fixture.find('ul');
-		var removing = true;
 
 		$ul.observe('childlist', 'li', function(record) {
-			if(removing) {
-				removing = false;
-
-				equal(1, record.removedNodes.length, 'Removed text node');
-			} else {
-				equal(1, record.addedNodes.length, 'Added text node');
-			}
-
 			equal(this, $ul.find('li:first')[0]);
 			equal('childList', record.type);
 
 			start();
 		});
 
-		helper($ul.find('li:first')).content('value');
+		helper.$('li:first', $ul).content('value');
 	});
 	test('Character data changed on child element', function() {
 		stop();
@@ -285,7 +275,7 @@
 			start();
 		});
 
-		helper($ul.find('li:first')).text('value');
+		helper.$('li:first', $ul).text('value');
 	});
 	test('Multiple element match on node added', function() {
 		stop(2);
@@ -301,11 +291,11 @@
 			start();
 		});
 
-		helper($ul.find('li:first')).add('<em>value</em>', function() {
-			setTimeout(function() {
-				$ul.find('li:last').append('<em>value</em>');
-			}, 100);
-		});
+		helper.$('li:first', $ul).append('<em>value</em>');
+
+		setTimeout(function() {
+			helper.$('li:first', $ul).append('<em>value</em>');
+		}, 100);
 	});
 	test('Multiple element match on multiple insert', function() {
 		stop(2);
@@ -321,7 +311,7 @@
 			start();
 		});
 
-		helper($ul.find('li:first')).add('<em></em><em></em>');
+		helper.$('li:first', $ul).append('<em></em><em></em>');
 	});
 
 	module('Multiple observers');
@@ -347,8 +337,8 @@
 				start();
 			});
 
-		helper($li).add('<span>value</span>');
-		helper($li).attr('data-attr', 'value');
+		helper.$($li).append('<span>value</span>');
+		helper.$($li).attr('data-attr', 'value');
 	});
 	test('Child node added and removed', function() {
 		stop(2);
@@ -363,13 +353,11 @@
 			start();
 		});
 
-		helper($li).add('<span>value</span>', function() {
-			// If the node is removed too fast the DOM is updated, 
-			// before a record can be processed.
-			setTimeout(function() {
-				$li.find('span').remove();
-			}, 100);
-		});
+		helper.$($li).append('<span>value</span>');
+
+		setTimeout(function() {
+			helper.$('span', $li).remove();
+		}, 100);
 	});
 	test('Nodes added and attribute changed', function() {
 		stop(3);
@@ -400,9 +388,9 @@
 				start();
 			});
 
-		helper($ul).attr('data-other', 'value');
-		helper($ul.find('li:first')).add('<span>value</span>');
-		helper($ul.find('li:last')).attr('data-attr', 'value');
+		helper.$($ul).attr('data-other', 'value');
+		helper.$('li:first', $ul).append('<span>value</span>');
+		helper.$('li:last', $ul).attr('data-attr', 'value');
 	});
 	test('Multiple matches on add node', function() {
 		stop(2);
@@ -425,7 +413,7 @@
 				start();
 			});
 
-		helper($li).add('<span><a href="#">value</a></span>');
+		helper.$($li).append('<span><a href="#">value</a></span>');
 	});
 	test('Multiple matches on remove node', function() {
 		stop(2);
@@ -448,7 +436,7 @@
 				start();
 			});
 
-		helper($li).remove();
+		helper.$($li).remove();
 	});
 	test('Match on deep insert', function() {
 		stop();
@@ -463,7 +451,7 @@
 			start();
 		});
 
-		helper($ul.find('li:last span')).add('<div><em></em></div>');
+		helper.$('li:last span', $ul).append('<div><em></em></div>');
 	});
 	test('Match on deep removale', function() {
 		stop();
@@ -478,6 +466,6 @@
 			start();
 		});
 
-		helper($container.find('ul')).remove();
+		helper.$('ul', $container).remove();
 	});
 }());
