@@ -81,36 +81,12 @@
 		that.attr = function(name, value) {
 			elem.setAttribute(name, value);
 		};
-
 		that.append = function(html) {
-			var div = document.createElement('div');
-			div.innerHTML = html;
-
-			while(div.firstChild) {
-				elem.appendChild(div.firstChild);
-			}
+			elem.appendChild(html);
 		};
-
 		that.remove = function() {
 			if(elem.parentNode) elem.parentNode.removeChild(elem);
 		};
-
-		that.text = function(text) {
-			var children = elem.childNodes;
-			var candidate;
-
-			for(var i = 0; i < children.length; i++) {
-				var child = children[i];
-
-				if(child instanceof Text) {
-					candidate = child;
-					if(child.nodeValue.trim()) break;
-				}
-			}
-
-			if(candidate) candidate.nodeValue = text;
-		};
-
 		that.content = function(text) {
 			elem.textContent = text;
 		};

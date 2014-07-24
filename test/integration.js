@@ -17,10 +17,10 @@
 		var $ul = $fixture.find('ul');
 
 		$ul.observe('attributes', function(record) {
-			equal(this, record.target, 'Attribute changed on this');
 			equal(this, $ul[0]);
-			equal('attributes', record.type);
-			equal('data-attr', record.attributeName);
+			equal(record.target, $ul[0]);
+			equal(record.type, 'attributes');
+			equal(record.attributeName, 'data-attr');
 
 			start();
 		});
@@ -33,9 +33,9 @@
 
 		var $ul = $fixture.find('ul');
 		var fn = function(record) {
-			equal(this, $ul[0], 'Changed attribute on this');
-			equal('attributes', record.type);
-			equal('data-attr', record.attributeName);
+			equal(this, $ul[0]);
+			equal(record.type, 'attributes');
+			equal(record.attributeName, 'data-attr');
 
 			start();
 		};
@@ -52,9 +52,9 @@
 
 		var $ul = $fixture.find('ul');
 		var fn = function(record) {
-			equal(this, $ul[0], 'Changed attribute on this');
-			equal('attributes', record.type);
-			equal('data-attr', record.attributeName);
+			equal(this, $ul[0]);
+			equal(record.type, 'attributes');
+			equal(record.attributeName, 'data-attr');
 
 			start();
 		};
@@ -71,9 +71,9 @@
 
 		var $ul = $fixture.find('ul');
 		var fn = function(record) {
-			equal(this, $ul[0], 'Changed attribute on this');
-			equal('attributes', record.type);
-			equal('data-other', record.attributeName);
+			equal(this, $ul[0]);
+			equal(record.type, 'attributes');
+			equal(record.attributeName, 'data-other');
 
 			start();
 		};
@@ -90,9 +90,9 @@
 
 		var $ul = $fixture.find('ul');
 		var fn = function(record) {
-			equal(this, $ul[0], 'Changed attribute on this');
-			equal('attributes', record.type);
-			equal('data-other', record.attributeName);
+			equal(this, $ul[0]);
+			equal(record.type, 'attributes');
+			equal(record.attributeName, 'data-other');
 
 			start();
 		};
@@ -105,43 +105,53 @@
 	});
 	test('Node added', function() {
 		stop();
-		expect(2);
+		expect(4);
 
 		var $ul = $fixture.find('ul');
+		var li = document.createElement('li');
 
 		$ul.observe('childlist', function(record) {
-			equal(this, record.target, 'Added node to this');
-			equal('childList', record.type);
+			equal(this, $ul[0]);
+			equal(record.type, 'childList');
+			equal(record.addedNodes.length, 1);
+			equal(record.addedNodes[0], li);
 
 			start();
 		});
 
-		helper.$($ul).append('<li>Item 0</li>');
+		helper.$($ul).append(li);
 	});
 	test('Node removed', function() {
 		stop();
-		expect(2);
+		expect(4);
 
 		var $ul = $fixture.find('ul');
+		var $li = $ul.find('li:first');
 
 		$ul.observe('childlist', function(record) {
-			equal(this, record.target, 'Removed node from this');
-			equal('childList', record.type);
+			equal(this, record.target);
+			equal(record.type, 'childList');
+			equal(record.removedNodes.length, 1);
+			equal(record.removedNodes[0], $li[0]);
 
 			start();
 		});
 
-		helper.$('li:first', $ul).remove();
+		helper.$($li).remove();
 	});
 	test('Content swapped', function() {
 		stop();
-		expect(2);
+		expect(6);
 
 		var $header = $('#header');
 
 		$header.observe('childlist subtree', function(record) {
-			equal(this, $header[0], 'Child text nodes swapped');
-			equal('childList', record.type);
+			equal(this, $header[0]);
+			equal(record.type, 'childList');
+			equal(record.addedNodes.length, 1);
+			equal(record.addedNodes[0].data, 'value');
+			equal(record.removedNodes.length, 1);
+			ok(record.removedNodes[0].data, 'Header');
 
 			start();
 		});
@@ -150,64 +160,78 @@
 	});
 	test('Character data changed', function() {
 		stop();
-		expect(2);
+		expect(4);
 
 		var $header = $('#header');
+		var text = $header[0].childNodes[0];
 
 		$header.observe('characterdata subtree', function(record) {
-			equal(this, $header[0], 'Child text node value changed');
-			equal('characterData', record.type);
+			equal(this, $header[0]);
+			equal(record.target, text);
+			equal(record.type, 'characterData');
+			equal(record.target, text);
 
 			start();
 		});
 
-		helper.$($header).text('value');
+		text.nodeValue = 'value';
 	});
 	test('Subtree option', function() {
-		stop();
-		expect(2);
-
-		var $ul = $fixture.find('ul');
-
-		$ul.observe('childlist subtree', function(record) {
-			equal(this, $ul[0], 'Subtree modified without selector');
-			equal('childList', record.type);
-
-			start();
-		});
-
-		helper.$('span', $ul).remove();
-	});
-	test('Add text node', function() {
-		stop();
-		expect(2);
-
-		var $ul = $fixture.find('ul');
-
-		$ul.observe('childlist', function(record) {
-			equal(this, $ul[0], 'Added child text node');
-			equal('childList', record.type);
-
-			start();
-		});
-
-		helper.$($ul).append('item');
-	});
-	test('Add text node and element node', function() {
 		stop();
 		expect(4);
 
 		var $ul = $fixture.find('ul');
+		var $span = $ul.find('span');
 
-		$ul.observe('childlist', function(record) {
-			equal(this, $ul[0], 'Node appended');
-			equal('childList', record.type);
+		$ul.observe('childlist subtree', function(record) {
+			equal(this, $ul[0]);
+			equal(record.type, 'childList');
+			equal(record.removedNodes.length, 1);
+			equal(record.removedNodes[0], $span[0]);
 
 			start();
 		});
 
-		helper.$($ul).append('item');
-		helper.$($ul).append('<li></li>');
+		helper.$($span).remove();
+	});
+	test('Add text node', function() {
+		stop();
+		expect(4);
+
+		var $ul = $fixture.find('ul');
+		var text = document.createTextNode('item');
+
+		$ul.observe('childlist', function(record) {
+			equal(this, $ul[0]);
+			equal(record.type, 'childList');
+			equal(record.addedNodes.length, 1);
+			equal(record.addedNodes[0], text);
+
+			start();
+		});
+
+		helper.$($ul).append(text);
+	});
+	test('Add text node and element node', function() {
+		stop();
+		expect(8);
+
+		var $ul = $fixture.find('ul');
+		var nodes = [document.createTextNode('item'), document.createElement('li')];
+		var i = 0;
+
+		$ul.observe('childlist', function(record) {
+			equal(this, $ul[0]);
+			equal(record.type, 'childList');
+			equal(record.addedNodes.length, 1);
+			equal(record.addedNodes[0], nodes[i]);
+
+			i++;
+			start();
+		});
+
+		helper.$($ul).append(nodes[0]);
+		helper.$($ul).append(nodes[1]);
 	});
 
 	module('Observe child');
@@ -220,9 +244,9 @@
 		var $li = $ul.find('li:first');
 
 		$ul.observe('attributes', 'li:first', function(record) {
-			equal(this, $li[0], 'Changed child attribute');
-			equal('attributes', record.type);
-			equal('data-attr', record.attributeName);
+			equal(this, $li[0]);
+			equal(record.type, 'attributes');
+			equal(record.attributeName, 'data-attr');
 
 			start();
 		});
@@ -231,271 +255,336 @@
 	});
 	test('Child node added', function() {
 		stop();
-		expect(3);
+		expect(4);
+
+		var $ul = $fixture.find('ul');
+		var $li = $ul.find('li:first');
+		var span = document.createElement('span');
+
+		$ul.observe('childlist', 'li:first span', function(record) {
+			equal(this, span);
+			equal(record.type, 'childList');
+			equal(record.addedNodes.length, 1);
+			equal(record.addedNodes[0], span);
+
+			start();
+		});
+
+		helper.$($li).append(span);
+	});
+	test('Child node removed', function() {
+		stop();
+		expect(4);
+
+		var $ul = $fixture.find('ul');
+		var $li = $ul.find('li:last');
+		var $span = $li.find('span');
+
+		$ul.observe('childlist', 'li:last span', function(record) {
+			equal(this, $li[0]);
+			equal(record.type, 'childList');
+			equal(record.removedNodes.length, 1);
+			equal(record.removedNodes[0], $span[0]);
+
+			start();
+		});
+
+		helper.$($span).remove();
+	});
+	test('Removed child node with no siblings', function() {
+		stop();
+		expect(4);
+
+		var $span = $('#menu');
+		var $a = $span.find('a');
+
+		$span.observe('childlist', 'a', function(record) {
+			equal(this, $span[0]);
+			equal(record.type, 'childList');
+			equal(record.removedNodes.length, 1);
+			equal(record.removedNodes[0], $a[0]);
+
+			start();
+		});
+
+		helper.$($a).remove();
+	});
+	test('Swapped content of child node', function() {
+		stop();
+		expect(6);
 
 		var $ul = $fixture.find('ul');
 		var $li = $ul.find('li:first');
 
-		$ul.observe('childlist', 'li:first span', function(record) {
-			equal(this, $li.find('span')[0], 'Added child node');
-			equal('childList', record.type);
-			equal(1, record.addedNodes.length);
-
-			start();
-		});
-
-		helper.$($li).append('<span>value</span>');
-	});
-	test('Child node removed', function() {
-		stop();
-		expect(3);
-
-		var $ul = $fixture.find('ul');
-		var $li = $ul.find('li:last');
-
-		$ul.observe('childlist', 'li:last span', function(record) {
-			equal(this, $li[0], 'Removed child node');
-			equal('childList', record.type);
-			equal(1, record.removedNodes.length);
-
-			start();
-		});
-
-		helper.$('span', $li).remove();
-	});
-	test('Removed child node with no siblings', function() {
-		stop();
-		expect(2);
-
-		var $span = $('#menu');
-
-		$span.observe('childlist', 'a', function(record) {
-			equal(this, $span[0], 'Child removed');
-			equal('childList', record.type);
-
-			start();
-		});
-
-		helper.$('a', $span).remove();
-	});
-	test('Swapped content of child node', function() {
-		stop();
-		expect(2);
-
-		var $ul = $fixture.find('ul');
-
 		$ul.observe('childlist', 'li', function(record) {
-			equal(this, $ul.find('li:first')[0]);
-			equal('childList', record.type);
+			equal(this, $li[0]);
+			equal(record.type, 'childList');
+			equal(record.addedNodes.length, 1);
+			equal(record.addedNodes[0].data, 'value');
+			equal(record.removedNodes.length, 1);
+			equal(record.removedNodes[0].data, 'Item 1');
 
 			start();
 		});
 
-		helper.$('li:first', $ul).content('value');
+		helper.$($li).content('value');
 	});
 	test('Character data changed on child element', function() {
 		stop();
-		expect(2);
+		expect(4);
 
 		var $ul = $fixture.find('ul');
+		var $li = $ul.find('li:first');
+		var text = $li[0].childNodes[0];
 
 		$ul.observe('characterData', 'li', function(record) {
-			equal(this, $ul.find('li:first')[0], 'Child text node content modified');
-			equal('characterData', record.type);
+			equal(this, $li[0]);
+			equal(record.target, text);
+			equal(record.type, 'characterData');
+			equal(record.target, text);
 
 			start();
 		});
 
-		helper.$('li:first', $ul).text('value');
+		text.nodeValue = 'value';
 	});
 	test('Add text node', function() {
 		stop();
-		expect(2);
+		expect(4);
 
 		var $ul = $fixture.find('ul');
+		var $li = $ul.find('li:first');
+		var text = document.createTextNode('item');
 
 		$ul.observe('childlist', 'li', function(record) {
-			equal(this, $ul.find('li:first')[0], 'Added child text node');
-			equal('childList', record.type);
+			equal(this, $li[0]);
+			equal(record.type, 'childList');
+			equal(record.addedNodes.length, 1);
+			equal(record.addedNodes[0], text);
 
 			start();
 		});
 
-		helper.$('li:first', $ul).append('item');
+		helper.$($li).append(text);
 	});
 	test('Add text node and element node', function() {
 		stop();
 		expect(4);
 
 		var $ul = $fixture.find('ul');
+		var text = document.createTextNode('item');
+		var li = document.createElement('li');
 
 		$ul.observe('childlist', 'li', function(record) {
-			equal(this, $ul.find('li:last')[0], 'Node appended');
-			equal('childList', record.type);
-			equal(1, record.addedNodes.length);
-			equal('li', record.addedNodes[0].tagName.toLowerCase());
+			equal(this, li);
+			equal(record.type, 'childList');
+			equal(record.addedNodes.length, 1);
+			equal(record.addedNodes[0], li);
 
 			start();
 		});
 
-		helper.$($ul).append('item'); // Should not be called when appending text
-		helper.$($ul).append('<li></li>');
+		helper.$($ul).append(text); // Should not be called when appending text
+		helper.$($ul).append(li);
 	});
 	test('Multiple element match on node added', function() {
 		stop(2);
-		expect(4);
+		expect(8);
 
 		var $ul = $fixture.find('ul');
+		var $li = $ul.find('li:first');
+		var em = [document.createElement('em'), document.createElement('em')];
 		var i = 0;
 
 		$ul.observe('childlist', 'li em', function(record) {
-			equal(this, $ul.find('li em')[i++], 'Multiple item matches');
-			equal('childList', record.type);
+			equal(this, em[i]);
+			equal(record.type, 'childList');
+			equal(record.addedNodes.length, 1);
+			equal(record.addedNodes[0], em[i]);
 
+			i++;
 			start();
 		});
 
-		helper.$('li:first', $ul).append('<em>value</em>');
+		helper.$($li).append(em[0]);
 
 		setTimeout(function() {
-			helper.$('li:first', $ul).append('<em>value</em>');
+			helper.$($li).append(em[1]);
 		}, 100);
 	});
 	test('Multiple element match on multiple insert', function() {
 		stop(2);
-		expect(4);
+		expect(8);
 
 		var $ul = $fixture.find('ul');
+		var $li = $ul.find('li:first');
+		var em = [document.createElement('em'), document.createElement('em')];
 		var i = 0;
 
 		$ul.observe('childlist', 'li em', function(record) {
-			equal(this, $ul.find('li em')[i++], 'Multiple item matches');
-			equal('childList', record.type);
+			equal(this, em[i]);
+			equal(record.type, 'childList');
+			equal(record.addedNodes.length, 1);
+			equal(record.addedNodes[0], em[i]);
 
+			i++;
 			start();
 		});
 
-		helper.$('li:first', $ul).append('<em></em><em></em>');
+		helper.$($li).append(em[0]);
+		helper.$($li).append(em[1]);
 	});
 
 	module('Multiple observers');
 
 	test('Child node added and attribute changed', function() {
 		stop(2);
-		expect(4);
+		expect(7);
 
 		var $ul = $fixture.find('ul');
 		var $li = $ul.find('li:first');
+		var span = document.createElement('span');
 
 		$ul
 			.observe('childlist', 'li:first span', function(record) {
-				equal(this, $li.find('span')[0], 'Added child node');
-				equal('childList', record.type);
+				equal(this, span);
+				equal(record.type, 'childList');
+				equal(record.addedNodes.length, 1);
+				equal(record.addedNodes[0], span);
 
 				start();
 			})
 			.observe({ attributes: true, attributeFilter: ['data-attr'] }, 'li:first', function(record) {
-				equal(this, $li[0], 'Changed attribute');
-				equal('attributes', record.type);
+				equal(this, $li[0]);
+				equal(record.type, 'attributes');
+				equal(record.attributeName, 'data-attr');
 
 				start();
 			});
 
-		helper.$($li).append('<span>value</span>');
+		helper.$($li).append(span);
 		helper.$($li).attr('data-attr', 'value');
 	});
 	test('Child node added and removed', function() {
 		stop(2);
-		expect(2);
+		expect(8);
 
 		var $ul = $fixture.find('ul');
 		var $li = $ul.find('li:first');
+		var span = document.createElement('span');
+		var adding = true;
 
 		$ul.observe('childlist', 'li:first span', function(record) {
-			equal('childList', record.type);
+			equal(record.type, 'childList');
 
+			if(adding) {
+				equal(this, span);
+				equal(record.addedNodes.length, 1);
+				equal(record.addedNodes[0], span);
+			} else {
+				equal(this, $li[0]);
+				equal(record.removedNodes.length, 1);
+				equal(record.removedNodes[0], span);
+			}
+
+			adding = false;
 			start();
 		});
 
-		helper.$($li).append('<span>value</span>');
+		helper.$($li).append(span);
 
 		setTimeout(function() {
-			helper.$('span', $li).remove();
+			helper.$(span).remove();
 		}, 100);
 	});
 	test('Nodes added and attribute changed', function() {
 		stop(3);
-		expect(9);
+		expect(10);
 
 		var $ul = $fixture.find('ul');
+		var $li = $ul.find('li:last');
+		var span = document.createElement('span');
 
 		$ul
 			.observe('attributes', function(record) {
-				equal(this, $ul[0], 'Changed attribute on this');
-				equal('attributes', record.type);
-				equal('data-other', record.attributeName);
+				equal(this, $ul[0]);
+				equal(record.type, 'attributes');
+				equal(record.attributeName, 'data-other');
 
 				start();
 			})
 			.observe('childlist', 'li:first span', function(record) {
-				equal(this, $ul.find('li:first span')[0], 'Added node to first li');
-				equal('childList', record.type);
-				equal(1, record.addedNodes.length);
+				equal(this, span);
+				equal(record.type, 'childList');
+				equal(record.addedNodes.length, 1);
+				equal(record.addedNodes[0], span);
 
 				start();
 			})
 			.observe({ attributes: true, attributeFilter: ['data-attr'] }, 'li:last', function(record) {
-				equal(this, $ul.find('li:last')[0], 'Changed attibute on last li');
-				equal('attributes', record.type);
-				equal('data-attr', record.attributeName);
+				equal(this, $li[0]);
+				equal(record.type, 'attributes');
+				equal(record.attributeName, 'data-attr');
 
 				start();
 			});
 
 		helper.$($ul).attr('data-other', 'value');
-		helper.$('li:first', $ul).append('<span>value</span>');
-		helper.$('li:last', $ul).attr('data-attr', 'value');
+		helper.$('li:first', $ul).append(span);
+		helper.$($li).attr('data-attr', 'value');
 	});
 	test('Multiple matches on add node', function() {
 		stop(2);
-		expect(4);
+		expect(8);
 
 		var $ul = $fixture.find('ul');
 		var $li = $ul.find('li:first');
 
+		var span = document.createElement('span');
+		var a = document.createElement('a');
+		span.appendChild(a);
+
 		$ul
 			.observe('childlist', 'li:first span', function(record) {
-				equal(this, $li.find('span')[0], 'Span inserted');
-				equal('childList', record.type);
+				equal(this, span);
+				equal(record.type, 'childList');
+				equal(record.addedNodes.length, 1);
+				equal(record.addedNodes[0], span);
 
 				start();
 			})
 			.observe('childlist', 'li:first span a', function(record) {
-				equal(this, $li.find('span a')[0], 'Span with a inserted');
-				equal('childList', record.type);
+				equal(this, a);
+				equal(record.type, 'childList');
+				equal(record.addedNodes.length, 1);
+				equal(record.addedNodes[0], span);
 
 				start();
 			});
 
-		helper.$($li).append('<span><a href="#">value</a></span>');
+		helper.$($li).append(span);
 	});
 	test('Multiple matches on remove node', function() {
 		stop(2);
-		expect(4);
+		expect(8);
 
 		var $ul = $fixture.find('ul');
 		var $li = $ul.find('li:last');
 
 		$ul
 			.observe('childlist', 'li', function(record) {
-				equal(this, $ul[0], 'Li removed');
-				equal('childList', record.type);
+				equal(this, $ul[0]);
+				equal(record.type, 'childList');
+				equal(record.removedNodes.length, 1);
+				equal(record.removedNodes[0], $li[0]);
 
 				start();
 			})
 			.observe('childlist', 'li span', function(record) {
-				equal(this, $ul[0], 'Li with span remved');
-				equal('childList', record.type);
+				equal(this, $ul[0]);
+				equal(record.type, 'childList');
+				equal(record.removedNodes.length, 1);
+				equal(record.removedNodes[0], $li[0]);
 
 				start();
 			});
@@ -504,32 +593,41 @@
 	});
 	test('Match on deep insert', function() {
 		stop();
-		expect(2);
+		expect(4);
 
 		var $ul = $fixture.find('ul');
 
+		var div = document.createElement('div');
+		var em = document.createElement('em');
+		div.appendChild(em);
+
 		$ul.observe('childlist', 'li span div em', function(record) {
-			equal(this, $ul.find('li:last span div em')[0], 'Added em element');
-			equal('childList', record.type);
+			equal(this, em);
+			equal(record.type, 'childList');
+			equal(record.addedNodes.length, 1);
+			equal(record.addedNodes[0], div);
 
 			start();
 		});
 
-		helper.$('li:last span', $ul).append('<div><em></em></div>');
+		helper.$('li:last span', $ul).append(div);
 	});
 	test('Match on deep removale', function() {
 		stop();
-		expect(2);
+		expect(4);
 
 		var $container = $('#container');
+		var $ul = $container.find('ul');
 
 		$container.observe('childlist', 'div ul li .last-li', function(record) {
-			equal(this, $('#content')[0], 'Removed ul element');
-			equal('childList', record.type);
+			equal(this, $('#content')[0]);
+			equal(record.type, 'childList');
+			equal(record.removedNodes.length, 1);
+			equal(record.removedNodes[0], $ul[0]);
 
 			start();
 		});
 
-		helper.$('ul', $container).remove();
+		helper.$($ul).remove();
 	});
 }());
