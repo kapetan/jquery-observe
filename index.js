@@ -21,7 +21,7 @@
 		'attributeOldValue',
 		'characterDataOldValue',
 		'attributeFilter'
-	], function(name) { 
+	], function(name) {
 		return [name.toLowerCase(), name];
 	});
 	var ALL = toObject(Object.keys(OBSERVER_OPTIONS), function(name) {
@@ -59,15 +59,6 @@
 
 		return result;
 	};
-	var mapTextNodes = function(collection) {
-		return Array.prototype.slice.call(collection).map(function(node) {
-			if(node instanceof Text) {
-				return $(node).parent().get(0);
-			}
-
-			return node;
-		});
-	};
 
 	var objectToString = function(obj) {
 		return '[' + Object.keys(obj).sort().reduce(function(acc, key) {
@@ -78,7 +69,7 @@
 	};
 
 	var MutationObserver = window.MutationObserver || window.WebKitMutationObserver;
-	
+
 	var Pattern = function(target, options, selector, handler) {
 		this._originalOptions = $.extend({}, options);
 		options = $.extend({}, options);
@@ -138,7 +129,7 @@
 				}
 			}
 		} else {
-			var recordTarget = record.target instanceof Text ? 
+			var recordTarget = record.target instanceof Text ?
 				$(record.target).parent() : $(record.target);
 
 			if(!options.subtree && recordTarget.get(0) !== this.target.get(0)) {
@@ -195,10 +186,15 @@
 	};
 	Pattern.prototype._matchSelector = function(origin, element) {
 		var match = origin.find(this.selector);
-		element = $(mapTextNodes(element));
+		element = Array.prototype.slice.call(element);
 
 		match = match.filter(function() {
-			return element.is(this) || element.has(this).length;
+			var self = this;
+
+			return element.some(function(node) {
+				if(node instanceof Text) return node.parentNode === self;
+				else return node === self || $(node).has(self).length;
+			});
 		});
 
 		return match;
@@ -223,16 +219,15 @@
 		if(!this._observer) {
 			this._observer = new MutationObserver(function(records) {
 				records.forEach(function(record) {
-					for(var i = 0; i < self.patterns.length; i++) {
-						var pattern = self.patterns[i];
+					self.patterns.forEach(function(pattern) {
 						var match = pattern.match(record);
-						
+
 						if(match.length) {
 							match.each(function() {
 								pattern.handler.call(this, record);
 							});
-						}					
-					}
+						}
+					});
 				});
 			});
 		} else {
@@ -438,12 +433,12 @@
 		for(var i = 0; i < this.patterns.length; i++) {
 			var pattern = this.patterns[i];
 			var match = pattern.match(record);
-			
+
 			if(match.length) {
 				match.each(function() {
 					pattern.handler.call(this, record);
 				});
-			}					
+			}
 		}
 	};
 	DOMEventObserver.prototype._addEvent = function(type) {

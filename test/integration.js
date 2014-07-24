@@ -178,6 +178,37 @@
 
 		helper.$('span', $ul).remove();
 	});
+	test('Add text node', function() {
+		stop();
+		expect(2);
+
+		var $ul = $fixture.find('ul');
+
+		$ul.observe('childlist', function(record) {
+			equal(this, $ul[0], 'Added child text node');
+			equal('childList', record.type);
+
+			start();
+		});
+
+		helper.$($ul).append('item');
+	});
+	test('Add text node and element node', function() {
+		stop();
+		expect(4);
+
+		var $ul = $fixture.find('ul');
+
+		$ul.observe('childlist', function(record) {
+			equal(this, $ul[0], 'Node appended');
+			equal('childList', record.type);
+
+			start();
+		});
+
+		helper.$($ul).append('item');
+		helper.$($ul).append('<li></li>');
+	});
 
 	module('Observe child');
 
@@ -276,6 +307,39 @@
 		});
 
 		helper.$('li:first', $ul).text('value');
+	});
+	test('Add text node', function() {
+		stop();
+		expect(2);
+
+		var $ul = $fixture.find('ul');
+
+		$ul.observe('childlist', 'li', function(record) {
+			equal(this, $ul.find('li:first')[0], 'Added child text node');
+			equal('childList', record.type);
+
+			start();
+		});
+
+		helper.$('li:first', $ul).append('item');
+	});
+	test('Add text node and element node', function() {
+		stop();
+		expect(4);
+
+		var $ul = $fixture.find('ul');
+
+		$ul.observe('childlist', 'li', function(record) {
+			equal(this, $ul.find('li:last')[0], 'Node appended');
+			equal('childList', record.type);
+			equal(1, record.addedNodes.length);
+			equal('li', record.addedNodes[0].tagName.toLowerCase());
+
+			start();
+		});
+
+		helper.$($ul).append('item'); // Should not be called when appending text
+		helper.$($ul).append('<li></li>');
 	});
 	test('Multiple element match on node added', function() {
 		stop(2);
