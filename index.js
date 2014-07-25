@@ -1,4 +1,4 @@
-(function($) {
+(function($, ns) {
 	var toObject = function(array, fn) {
 		var result = {};
 
@@ -161,9 +161,9 @@
 		return this._matchSelector(this.target, record.addedNodes);
 	};
 	Pattern.prototype._matchRemovedNodes = function(record) {
-		var branch = this.target.branch();
+		var branch = new ns.Branch(this.target);
 		var nodes = Array.prototype.slice.call(record.removedNodes).map(function(node) {
-			return $(node).clone(false, false).get(0);
+			return node.cloneNode(true);
 		});
 
 		if(record.previousSibling) {
@@ -171,18 +171,11 @@
 		} else if(record.nextSibling) {
 			branch.find(record.nextSibling).before(nodes);
 		} else {
-			var appendTo;
-
-			if(branch.is(record.target)) {
-				appendTo = branch;
-			} else {
-				appendTo = branch.find(record.target);
-			}
-
+			var appendTo = this.target === record.target ? branch.root : branch.find(record.target);
 			appendTo.empty().append(nodes);
 		}
 
-		return this._matchSelector(branch, nodes).length ? $(record.target) : EMPTY;
+		return this._matchSelector(branch.root, nodes).length ? $(record.target) : EMPTY;
 	};
 	Pattern.prototype._matchSelector = function(origin, element) {
 		var match = origin.find(this.selector);
@@ -448,11 +441,9 @@
 		}
 	};
 
-	$.Observe = {
-		Pattern: Pattern,
-		MutationObserver: Observer,
-		DOMEventObserver: DOMEventObserver
-	};
+	ns.Pattern = Pattern;
+	ns.MutationObserver = Observer;
+	ns.DOMEventObserver = DOMEventObserver;
 
 	$.fn.observe = function(options, selector, handler) {
 		if(!selector) {
@@ -514,4 +505,4 @@
 			observer.disconnect(options, selector, handler);
 		});
 	};
-}(jQuery));
+}(jQuery, jQuery.Observe));

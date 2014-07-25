@@ -95,7 +95,7 @@ class HTTPServer
 		end
 
 		def body?
-			(method == :post or method == :put) and 
+			(method == :post or method == :put) and
 				(headers[:content_length] and headers[:content_length] > 0)
 		end
 
@@ -103,9 +103,9 @@ class HTTPServer
 			options[:etag] = Digest::SHA1.hexdigest(options[:etag].to_s) if options[:etag]
 			options[:last_modified] = options[:last_modified].httpdate if options[:last_modified].is_a?(Time)
 
-			stale = { 
-				:etag => :if_none_match, 
-				:last_modified => :if_modified_since 
+			stale = {
+				:etag => :if_none_match,
+				:last_modified => :if_modified_since
 			}.any? do |k, v|
 				options[k] ? options[k] != headers[v] : false
 			end
@@ -429,11 +429,17 @@ options = {}
 GOOGLE_CLOSURE_COMPILER = URI.parse('http://closure-compiler.appspot.com/compile')
 GITHUB_MARKDOWN_RENDERER = URI.parse('https://api.github.com/markdown/raw')
 OUT_PATH = 'jquery-observe.js'
+FILES = [
+	'lib/ns.js',
+	'lib/path.js',
+	'lib/branch.js',
+	'index.js'
+]
 
 OptionParser.new { |opts|
 	opts.banner = 'Usage: build.rb [options]'
 
-	opts.on('-m', '--minify', 'Minify souce using the Google Closure Compiler') do 
+	opts.on('-m', '--minify', 'Minify souce using the Google Closure Compiler') do
 		options[:minify] = true
 	end
 
@@ -453,7 +459,7 @@ def read_file(path)
 end
 
 def render_markdown(src)
-	Net::HTTP.start(GITHUB_MARKDOWN_RENDERER.host, GITHUB_MARKDOWN_RENDERER.port, 
+	Net::HTTP.start(GITHUB_MARKDOWN_RENDERER.host, GITHUB_MARKDOWN_RENDERER.port,
 			:use_ssl => true, :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
 		request = Net::HTTP::Post.new(GITHUB_MARKDOWN_RENDERER.request_uri)
 		request.body = src
@@ -471,7 +477,7 @@ def concat
 
 	out = []
 
-	Dir.glob(File.join(DIR, 'lib', '*')).push(File.join(DIR, 'index.js')).each do |path|
+	FILES.each do |path|
 		path = File.absolute_path(path, DIR)
 
 		out << template % [path.gsub(DIR, '/').gsub(/^\/*/, './'), read_file(path)]
@@ -522,8 +528,8 @@ def main(options)
 		HTTPServer.new(options[:server]) {
 			get('/*.md') do |request, response|
 				path = File.join(DIR, request.path)
-				
-				body = <<-EOF 
+
+				body = <<-EOF
 					<!DOCTYPE html>
 					<html>
 						<head>

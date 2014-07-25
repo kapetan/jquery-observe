@@ -7,8 +7,9 @@
 	<script type='text/javascript' src='http://code.jquery.com/jquery.min.js'></script>
 	<script type='text/javascript' src='/test/benchmark.js'></script>
 
-	<script type="text/javascript" src="/lib/jquery-path.js"></script>
-	<script type="text/javascript" src="/lib/jquery-branch.js"></script>
+	<script type="text/javascript" src="/lib/ns.js"></script>
+	<script type="text/javascript" src="/lib/path.js"></script>
+	<script type="text/javascript" src="/lib/branch.js"></script>
 	<script type="text/javascript" src="/index.js"></script>
 
 	<style type='text/css'>
@@ -78,7 +79,7 @@
 		}
 		#content .status .running {
 			display: none;
-		}	
+		}
 		#content .status .complete {
 			display: none;
 		}
@@ -95,7 +96,7 @@
 			padding: 0.4em 0.5em 0.4em 2.5em;
 			border-bottom: 1px solid #fff;
 			list-style-position: inside;
-			color: #528CE0; 
+			color: #528CE0;
 			background-color: #D2E0E6;
 		}
 		#content .benchmarks li:last-child {
@@ -125,7 +126,7 @@
 
 	<script type='text/html' id='template-benchmark'>
 		<li>
-			<span class='benchmark-name'></span>: 
+			<span class='benchmark-name'></span>:
 			<span class='benchmark-result'></span>
 		</li>
 	</script>
@@ -196,7 +197,7 @@
 								row.push('');
 							}
 						}
-						
+
 						data.push(row);
 					});
 
@@ -281,7 +282,7 @@
 						})
 						.on('complete', function(e) {
 							var res = self._save(testName);
-							
+
 							benchmark.complete(this);
 							benchmark.chart(res);
 
@@ -358,13 +359,15 @@
 			suite.tests.branching = {
 				_node: $('#fixture div.pos-49').get(0),
 				'$.fn.branch.find(selector)': function() {
-					$('#fixture').branch().find('div.pos-49');
+					var branch = new $.Observe.Branch('#fixture');
+					branch.find('div.pos-49');
 				},
 				'$.fn.find(selector)': function() {
 					$('#fixture').find('div.pos-49');
 				},
 				'$.fn.branch.find(node)': function() {
-					$('#fixture').branch().find(suite.tests.branching._node);
+					var branch = new $.Observe.Branch('#fixture');
+					branch.find(suite.tests.branching._node);
 				},
 				'$.fn.find(node)': function() {
 					$('#fixture').find(suite.tests.branching._node);
@@ -377,8 +380,8 @@
 			suite.tests.matching = {
 				_childListRecord: {
 					type: 'childList',
-					target: $matchingTarget.get(0), 
-					addedNodes: $matchingTarget.children().get(), 
+					target: $matchingTarget.get(0),
+					addedNodes: $matchingTarget.children().get(),
 					removedNodes: $matchingTarget.children().clone().get()
 				},
 				_attributeRecord: {

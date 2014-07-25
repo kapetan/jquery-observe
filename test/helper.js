@@ -1,27 +1,19 @@
 (function() {
 	var loadJs = function(src, callback) {
-		var script = document.createElement('script');
-		var done;
+		var xhr = new XMLHttpRequest();
+		var called = false;
+		var finish = function(err, result) {
+			if(called) return;
 
-		var finish = function(err) {
-			if(done) {
-				return;
-			}
-
-			done = true;
-			script.onreadystatechange = script.error = script.onload = null;
-
-			callback(err);
+			called = true;
+			callback(err, result);
 		};
 
-		script.onreadystatechange = script.onload = function() {
-			var state = script.readyState;
-
-			if(!state || state in { loaded: 1, complete: 1, uninitialized: 1 }) {
-				finish();
-			}
+		xhr.onload = function() {
+			finish(null, xhr.responseText);
 		};
-		script.onerror = function() {
+
+		xhr.onerror = function() {
 			finish(new Error('Script load failed'));
 		};
 
@@ -29,13 +21,8 @@
 			finish(new Error('Request timed out'));
 		}, 5000);
 
-		script.async = true;
-		script.type = 'text/javascript';
-		script.src = src;
-
-		var first = document.getElementsByTagName('script')[0];
-
-		first.parentNode.insertBefore(script, first);
+		xhr.open('GET', src, true);
+		xhr.send(null);
 	};
 
 	var helper = {};
@@ -56,18 +43,27 @@
 			src = [src];
 		}
 
-		var self = this;
 		var ready = src.length;
+		var result = [];
 		var error;
 
+		src.forEach(function(path, i) {
+			loadJs(path, function(err, source) {
+				if(error) return;
+				if(err) {
+					error = true;
+					return callback(err);
+				}
 
-		src.forEach(function(path) {
-			loadJs(path, function(err) {
-				error = error || err;
+				result[i] = source;
 
 				if(!--ready) {
+					result.forEach(function(source) {
+						eval(source);
+					});
+
 					setTimeout(function() {
-						(callback || function() {})(error);
+						if(callback) callback();
 					}, 10);
 				}
 			});
