@@ -171,8 +171,7 @@
 		} else if(record.nextSibling) {
 			branch.find(record.nextSibling).before(nodes);
 		} else {
-			var appendTo = this.target === record.target ? branch.root : branch.find(record.target);
-			appendTo.empty().append(nodes);
+			branch.find(record.target).empty().append(nodes);
 		}
 
 		return this._matchSelector(branch.root, nodes).length ? $(record.target) : EMPTY;
