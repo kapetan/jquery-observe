@@ -4,7 +4,7 @@
   "dependencies": {
     "jquery": "~1.7 || ~2"
   },
-  "main": "jquery-observer.js",
+  "main": "jquery-observe.js",
   "homepage": "https://github.com/kapetan/jquery-observe",
   "author": "Mirza Kapetanovic",
   "description": "Observe DOM mutations with jQuery",
