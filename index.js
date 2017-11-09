@@ -3,6 +3,7 @@
 		var result = {};
 
 		array.forEach(function(name) {
+		$.each(array, function(idx, name) {
 			var pair = fn(name);
 
 			if(pair) {
