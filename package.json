@@ -14,7 +14,7 @@
   },
   "files": [
     "/*.js",
-    "/lib/*.js",
+    "/lib/*.js"
   ],
   "license": "MIT",
   "dependencies": {
