@@ -47,7 +47,7 @@ $('#content')
 	})
 ```
 
-In the above callback functions `this` referes to the available matched DOM element. In the case where no selector is given `this` always refers to the element which `.observe()` was called on. When a selector is present `this` references different elements.
+In the above callback functions `this` refers to the available matched DOM element. In the case where no selector is given `this` always refers to the element which `.observe()` was called on. When a selector is present `this` references different elements.
 
 *	Records of type *attributes*: `this` refers to the node which had an attribute changed.
 
