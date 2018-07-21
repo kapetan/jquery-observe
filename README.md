@@ -8,7 +8,7 @@ Available through `bower`
 
 # Compatibility
 
-At this point the Mutation Observer API is only available in newer versions of Google Chrome (>= 18) and Mozillza Firefox (>= 14). Can be usefull when developing extensions (add-ons) that use content scripts, on a page that you don't control.
+At this point the Mutation Observer API is only available in newer versions of Google Chrome (>= 18) and Mozilla Firefox (>= 14). Can be useful when developing extensions (add-ons) that use content scripts, on a page that you don't control.
 
 There is a fallback for browsers who don't support the Mutation Observer API (mainly IE9 and Opera), using the deprecated [DOM Mutaion Events interface][w3_me]. These don't act completely as Mutation Observers, and can cause some different behaviour between browsers.
 For instance an event is fired for every descendant of an inserted node, where only one record is dispatched when using Mutation Observers. Furthermore because mutation events don't have the same information associated with them as Mutation Observer records, some contextual selectors may not match removed nodes. Some of those are `:first`, `:first-child`, `:eq`, `:last`, `:last-child`, `:even` and `:odd` (not an exhaustive list).
