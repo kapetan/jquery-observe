@@ -5,34 +5,21 @@
 
 	<meta charset="utf-8">
 
-	<script type='text/javascript' src='http://code.jquery.com/jquery.min.js'></script>
-	<script type='text/javascript' src='http://code.jquery.com/qunit/qunit-1.10.0.js'></script>
+	<script type="text/javascript" src="http://code.jquery.com/jquery.min.js"></script>
+	<script type="text/javascript" src="http://code.jquery.com/qunit/qunit-1.10.0.js"></script>
 
-	<link rel='stylesheet' type='text/css' href='http://code.jquery.com/qunit/qunit-1.10.0.css'>
+	<link rel="stylesheet" type="text/css" href="http://code.jquery.com/qunit/qunit-1.10.0.css">
 
-	<script type='text/javascript' src='/test/helper.js'></script>
-	<script type='text/javascript' src='/test/integration.js'></script>
+	<script type="text/javascript" src="helper.js"></script>
+	<script type="text/javascript" src="integration.js"></script>
 
-	<script type='text/javascript'>
+	<script type="text/javascript" src="../jquery-observe.js"></script>
+
+	<script type="text/javascript">
 		$(function() {
-			QUnit.config.autostart = false;
+			QUnit.config.autostart = true;
 			QUnit.config.altertitle = false;
 			QUnit.config.testTimeout = 2000;
-			QUnit.config.urlConfig.push({
-				id: "compiled",
-				label: "Compiled source",
-				tooltip: "Load compiled source files instead of the regular ones"
-			});
-
-			var startTest = function() {
-				QUnit.start();
-			};
-
-			if(QUnit.urlParams.compiled) {
-				helper.loadJs('/jquery-observe.js', startTest);
-			} else {
-				helper.loadJs(['/lib/ns.js', '/lib/branch.js', '/lib/path.js', '/index.js'], startTest);
-			}
 		});
 	</script>
 </head>

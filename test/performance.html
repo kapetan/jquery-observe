@@ -3,16 +3,13 @@
 <head>
 	<title>Benchmark</title>
 
-	<script type='text/javascript' src='https://www.google.com/jsapi'></script>
-	<script type='text/javascript' src='http://code.jquery.com/jquery.min.js'></script>
-	<script type='text/javascript' src='/test/benchmark.js'></script>
+	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+	<script type="text/javascript" src="http://code.jquery.com/jquery.min.js"></script>
 
-	<script type="text/javascript" src="/lib/ns.js"></script>
-	<script type="text/javascript" src="/lib/path.js"></script>
-	<script type="text/javascript" src="/lib/branch.js"></script>
-	<script type="text/javascript" src="/index.js"></script>
+	<script type="text/javascript" src="benchmark.js"></script>
+	<script type="text/javascript" src="../jquery-observe.js"></script>
 
-	<style type='text/css'>
+	<style type="text/css">
 		#content {
 			font-family: "Helvetica Neue Light", "HelveticaNeue-Light", "Helvetica Neue", Calibri, Helvetica, Arial, sans-serif;
 		}
@@ -124,14 +121,14 @@
 		}
 	</style>
 
-	<script type='text/html' id='template-benchmark'>
+	<script type="text/html" id="template-benchmark">
 		<li>
-			<span class='benchmark-name'></span>:
-			<span class='benchmark-result'></span>
+			<span class="benchmark-name"></span>:
+			<span class="benchmark-result"></span>
 		</li>
 	</script>
 
-	<script type='text/javascript'>
+	<script type="text/javascript">
 		google.load('visualization', '1', { packages: ['corechart'] });
 
 		google.setOnLoadCallback(function() {
@@ -481,31 +478,31 @@
 	</script>
 </head>
 <body>
-	<div id='content'>
-		<h1 class='title'>jQuery Observe Benchmark</h1>
-		<div class='ruler'></div>
-		<div class='toolbar'>
-			<a class='run-benchmark action' href='javascript:void(0);'>Run benchmark</a>
-			<a class='clear-data action' href='javascript:void(0);'>Clear data</a>
-			<span class='select-test'>
+	<div id="content">
+		<h1 class="title">jQuery Observe Benchmark</h1>
+		<div class="ruler"></div>
+		<div class="toolbar">
+			<a class="run-benchmark action" href="javascript:void(0);">Run benchmark</a>
+			<a class="clear-data action" href="javascript:void(0);">Clear data</a>
+			<span class="select-test">
 				<label>Test:</label>
 				<select></select>
 			</span>
 		</div>
-		<div class='user-agent'></div>
-		<div class='status'>
-			<div class='idle'>Idle</div>
-			<div class='running'>Running...</div>
-			<div class='complete'>
+		<div class="user-agent"></div>
+		<div class="status">
+			<div class="idle">Idle</div>
+			<div class="running">Running...</div>
+			<div class="complete">
 				<div>Benchmark completed</div>
-				<div><span class='no'></span> test(s) run, <span class='fastest'></span> was fastest</div>
+				<div><span class="no"></span> test(s) run, <span class="fastest"></span> was fastest</div>
 			</div>
 		</div>
-		<ol class='benchmarks'></ol>
+		<ol class="benchmarks"></ol>
 
-		<div id='chart'></div>
+		<div id="chart"></div>
 	</div>
 
-	<div id='fixture'></div>
+	<div id="fixture"></div>
 </body>
 </html>

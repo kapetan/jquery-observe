@@ -2,7 +2,7 @@
   "name": "jquery-observe",
   "version": "2.0.3",
   "dependencies": {
-    "jquery": "~1.7 || ~2"
+    "jquery": "~1.7 || ~2 || ~3"
   },
   "main": "jquery-observe.js",
   "homepage": "https://github.com/kapetan/jquery-observe",
@@ -19,11 +19,8 @@
   "ignore": [
     "bower.json",
     "README.md",
-    "lib",
     "test",
-    "build.rb",
     "index.html",
-    "index.js",
     "**/.*"
   ]
 }

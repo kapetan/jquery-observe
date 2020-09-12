@@ -3,11 +3,9 @@
 <head>
 	<title>jQuery Observe</title>
 
-	<script type='text/javascript' src='http://code.jquery.com/jquery.min.js'></script>
+	<script type="text/javascript" src="http://code.jquery.com/jquery.min.js"></script>
 
-	<script type="text/javascript" src="lib/jquery-path.js"></script>
-	<script type="text/javascript" src="lib/jquery-branch.js"></script>
-	<script type="text/javascript" src="index.js"></script>
+	<script type="text/javascript" src="jquery-observe.js"></script>
 
 	<script type="text/javascript">
 		$(function() {
@@ -28,14 +26,14 @@
 	</script>
 </head>
 <body>
-	<div id='content' class='content'>
-		<div id='header'>
-			<ul id='list'>
-				<li id='list-1'>Item 1</li>
-				<li id='list-2'>Item <span>2</span></li>
+	<div id="content" class="content">
+		<div id="header">
+			<ul id="list">
+				<li id="list-1">Item 1</li>
+				<li id="list-2">Item <span>2</span></li>
 			</ul>
 		</div>
-		<div id='footer'>Footer</div>
+		<div id="footer">Footer</div>
 	</div>
 
 	<button onclick='$("#list-1").remove()'>Remove item 1</button>
