@@ -1,0 +1,23 @@
+{
+  "name": "@kapetan/jquery-observe",
+  "version": "2.0.3",
+  "description": "Observe DOM mutations with jQuery",
+  "main": "jquery-observe.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kapetan/jquery-observe.git"
+  },
+  "keywords": [
+    "observe",
+    "observer",
+    "jquery",
+    "dom",
+    "compatibility"
+  ],
+  "author": "Mirza Kapetanovic",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kapetan/jquery-observe/issues"
+  },
+  "homepage": "https://github.com/kapetan/jquery-observe#readme"
+}

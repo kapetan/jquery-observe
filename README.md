@@ -6,6 +6,10 @@ Available through `bower`
 
 	bower install jquery-observe
 
+And `npm`
+
+	npm install @kapetan/jquery-observer
+
 # Compatibility
 
 At this point the Mutation Observer API is only available in newer versions of Google Chrome (>= 18) and Mozilla Firefox (>= 14). Can be useful when developing extensions (add-ons) that use content scripts, on a page that you don't control.
